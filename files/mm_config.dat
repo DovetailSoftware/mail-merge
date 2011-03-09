@@ -1,0 +1,100 @@
+/******************************************************************************/
+/* Config Items For MM API                                                    */
+/*                                                                            */
+/* Copyright (C) 2002 First Choice Software, Inc.        All Rights Reserved  */
+/******************************************************************************/
+
+OBJECT TYPE = "config_itm", NAME="Date Format"
+  UNIQUE_FIELD = name
+  FIELDS
+   name="MM Date Format";
+   str_value="dd-mmm-yyyy";
+  END_FIELDS
+END_OBJECT NAME="Date Format"
+
+OBJECT  TYPE="num_scheme", NAME=num_scheme_attach
+ UNIQUE_FIELD = name 
+  FIELDS
+   name ="Attach";
+   format ="%i";
+   start_value=1;
+   end_value=200000;
+   next_value=1;
+   value_width=0;
+   padded=0;
+   date_order=0;
+   day_format=0;
+   month_format=0;
+   year_format=0;
+   time_format=0;
+   reset_period=0;
+   reset_time = DATE "?/?/? ?:?:?";
+   last_change = DATE "?/?/? ?:?:?";
+   jan ="jan";
+   feb ="feb";
+   mar ="mar";
+   apr ="apr";
+   may ="may";
+   jun ="jun";
+   jul ="jul";
+   aug ="aug";
+   sep ="sep";
+   oct ="oct";
+   nov ="nov";
+   dec ="dec";
+  END_FIELDS
+  RELATIONS
+  END_RELATIONS
+END_OBJECT  NAME=num_scheme_attach
+
+/* Now for the list/I18N objects. You do not need to edit anything below this line. */
+
+OBJECT  TYPE="fc_locale", NAME=fc_locale_default
+  UNIQUE_FIELD=locale_name
+  FIELDS
+   locale_name ="EN_US";
+   abday ="Sun|Mon|Tue|Wed|Thu|Fri|Sat";
+   day ="Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday";
+   abmon ="Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec";
+   mon ="January|February|March|April|May|June|July|August|September|October|November|December";
+   d_t_fmt ="%a %b %d %H:%M:%S %Z %Y";
+   d_fmt ="%M/%D/%Y";
+   t_fmt ="%H:%M:%S";
+   am_pm ="AM|PM";
+   t_fmt_ampm ="%I:%M:%S %p";
+   upper ="A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z";
+   lower ="a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z";
+   space ="	|
+||| ";
+   cntrl ="||	|
+|||";
+   punct ="!|\"|#|$|%|&|'|(|)|*|+|,|-|.|/|:|;|<|=|>|?|@|[|\\|]|^|_|`|{|||}|~";
+   digit ="0|1|2|3|4|5|6|7|8|9";
+   xdigit ="0|1|2|3|4|5|6|7|8|9|A|B|C|D|E|F|a|b|c|d|e|f";
+   blank =" |	";
+   toupper ="a,A|b,B|c,C|d,D|e,E|f,F|g,G|h,H|i,I|j,J|k,K|l,L|m,M|n,N|o,O|p,P|q,Q|r,R|s,S|t,T|u,U|v,V|w,W|x,X|y,Y|z,Z";
+   tolower ="A,a|B,b|C,c|D,d|E,e|F,f|G,g|H,h|I,i|J,j|K,k|L,l|M,m|N,n|O,o|P,p|Q,q|R,r|S,s|T,t|U,u|V,v|W,w|X,x|Y,y|Z,z";
+   yesexpr ="y|Y|yes|YES|Yes|1|+";
+   noexpr ="n|N|no|NO|No|0|-";
+   int_curr_symbol ="USD";
+   currency_symbol ="$";
+   mon_decimal_point =".";
+   mon_thousands_sep =",";
+   mon_grouping=3;
+   positive_sign ="";
+   negative_sign ="-";
+   int_frac_digits=2;
+   frac_digits=2;
+   p_cs_precedes=1;
+   p_sep_by_space=0;
+   n_cs_precedes=1;
+   n_sep_by_space=0;
+   p_sign_posn=2;
+   n_sign_posn=2;
+   decimal_point =".";
+   thousands_sep =",";
+   grouping=3;
+  END_FIELDS
+  RELATIONS
+  END_RELATIONS
+END_OBJECT  NAME=fc_locale_default

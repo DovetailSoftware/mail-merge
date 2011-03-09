@@ -1,0 +1,593 @@
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Product        :  Many First Choice Products
+'
+' Series         :  First Choice Workflow Series(tm)
+'
+' Name           :  Path Edit Form
+'
+' Description    :  Allows for the creation of paths for many Clarify products
+'
+' Author          : First Choice Software, Inc.
+'                   4412 Spicewood Springs Road
+'                   Suite 701
+'                   Austin, TX  78759
+'                   (512) 418-2905
+'                   EMAIL: support@fchoice.com
+'                   www.fchoice.com
+'
+' Platforms       : This version supports Clarify 4.5 and later
+'
+' Copyright (C)  1999 First Choice Software, Inc.
+' All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Functional Declarations
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+OPTION EXPLICIT
+
+                                        ' Type declarations
+Type long_type
+  ret_long As Long
+End Type
+
+Type string_type
+  ret_string As String * 255
+End Type
+Global dummy As string_type
+
+Type rel_type
+  rel_type   As Integer
+  ret_string As String * 255
+End Type
+Global dummy_rel As rel_type
+
+Dim field_type As Long                  ' Cmn_type of field
+
+                                        ' Functional prototypes
+Declare Function get_table_num(table_name As String)
+Declare Sub load_lists()
+Declare Public Sub get_strings(start_val As Long, num_strings As Integer, _
+                   locale As String, application As String, ret_strings As List)
+Declare Function get_cmn_type(the_field As String, type_id As Integer) As Integer
+Declare Public Sub get_target_table(type_id As Integer, rel_name As String, _
+                                    ret_val As string_type)
+Declare Public Sub get_target_table2(rel_name As String, ret_val As string_type)
+Declare Public Sub get_field_names(type_id As Integer, fld_list As List)
+Declare Public Sub get_relations(type_id As Integer, rel_list As List)
+
+                                        ' Global variables
+Global locale As String
+
+Const OUTER_STR = "(OUTER) "
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Form Load Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub Form_Load()
+  Dim ret_strings As New List           ' Strings to place on controls
+
+                                        ' Do default action
+  Me.DoDefault
+
+                                        ' Get strings for controls, place them
+  get_strings 12300, 8, locale, "", ret_strings
+  LBL_PATH.Caption = ret_strings.ItemByIndex(0)
+  LBL_FIELDS.Caption = ret_strings.ItemByIndex(1)
+  LBL_RELATIONS.Caption = ret_strings.ItemByIndex(2)
+  LBL_CUR_OBJ.Caption = ret_strings.ItemByIndex(3)  
+  BTN_UP.Caption = ret_strings.ItemByIndex(4)
+  BTN_USE_DONE.Caption = ret_strings.ItemByIndex(5)
+  Ctl_CLOSE.Caption = ret_strings.ItemByIndex(6)
+  CHK_OUTER.Caption = ret_strings.ItemByIndex(7)
+  
+                                        ' Initialize variables
+  Cobj_ALLOW_OTM.Fill 0
+  Cobj_TABLE_CHAIN.Fill ""
+  Cobj_NAME_CHAIN.Fill ""
+  Cobj_CUR_TABLE.Fill -1
+  BTN_UP.Enabled = True
+  BTN_USE_DONE.Enabled = False
+  CHK_OUTER.Visible = False
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Close Button Click Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub CLOSE_Click
+  Me.Close
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Fields Grid Click Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub CLB_FIELDS_Click()
+                                        ' Turn off the selection in the relations grid
+                                        ' Turn off and disable the outer relation checkbox
+  Me.DoDefault
+  CLB_RELS.UnSelect
+  CHK_OUTER.Value = False
+  CHK_OUTER.Enabled = False
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Relations Grid Click Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub CLB_RELS_Click()
+                                        ' Turn off the selection in the fields grid
+                                        ' Turn on/off the outer join checkbox as needed
+  Me.DoDefault
+  CLB_FIELDS.UnSelect
+  If CHK_OUTER.Visible And Trim$(TXT_PATH.Text) = "" Then
+     CHK_OUTER.Enabled = True
+  Else
+     CHK_OUTER.Enabled = False
+  End If
+End Sub  
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Fields Grid Double Click Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub CLB_FIELDS_DblClick()
+  Dim t_str     As String               ' Current path string
+  Dim sel_rec   As Record               ' Selected row in grid
+
+                                        ' Get the current row
+  Me.DoDefault
+  Set sel_rec = CLB_FIELDS.Selected
+  
+                                        ' Get the current path
+                                        ' Add a colon if needed
+                                        ' Add the field
+                                        ' Put back in path
+  t_str = TXT_PATH.Text
+  If t_str <> "" Then
+     t_str = t_str + ":"
+  End If
+  t_str = t_str + sel_rec.GetField("address")
+  TXT_PATH.Text = t_str
+
+  t_str = sel_rec.GetField("address")
+  field_type = get_cmn_type(t_str, Cobj_CUR_TABLE.Contents)
+
+                                        ' Press the "Use/Done" button  
+  BTN_USE_DONE.Enabled = True
+  BTN_USE_DONE.Value = True
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Relations Grid Double Click Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub CLB_RELS_DblClick()
+  Dim t_str   As String                 ' Current path string
+  Dim ret_val As string_type            ' Return from query
+  Dim the_rel As String                 ' Relation name
+  Dim sel_rec As Record                 ' Selected row in relations grid
+  
+                                        ' Get the relations row
+                                        ' Get the relation name
+  Me.DoDefault
+  Set sel_rec = CLB_RELS.Selected
+  the_rel = Trim$(sel_rec.GetField("address"))
+  
+                                        ' Get the current path
+                                        ' Add a colon if needed
+                                        ' Add the relation. If the outer 
+                                        '  checkbox is on, add the keyword to it
+                                        ' Put back in path                    
+  t_str = Trim$(TXT_PATH.Text)
+  If t_str <> "" Then
+     t_str = t_str + ":"
+  End If
+  t_str = t_str + the_rel
+  If CHK_OUTER.Value = True Then
+     t_str = OUTER_STR & t_str
+  End If
+  TXT_PATH.Text = t_str
+
+                                        ' Unselect the grid and turn on "up" btn  
+  CLB_RELS.UnSelect
+  BTN_UP.Enabled = True
+
+                                        ' Get new table name from the relation
+  get_target_table Cobj_CUR_TABLE.Contents, the_rel, ret_val
+
+                                        ' Add new table name and number to the
+                                        '  chain strings.
+  t_str = Cobj_TABLE_CHAIN.Contents
+  If t_str <> "" Then
+     t_str = t_str + ":"
+  End If
+  t_str = t_str + Trim$(Str$(Cobj_CUR_TABLE.Contents))
+  Cobj_TABLE_CHAIN.Fill t_str
+  
+  t_str = Cobj_NAME_CHAIN.Contents
+  If t_str <> "" Then
+     t_str = t_str + ":"
+  End If
+  t_str = t_str + TXT_CUR_OBJ.Text
+  Cobj_NAME_CHAIN.Fill t_str
+
+                                        ' Change the current object
+                                        ' Set the current table number
+                                        ' Fill the fields/rels list for new table  
+  TXT_CUR_OBJ.Text = Trim$(ret_val.ret_string)
+  Cobj_CUR_TABLE.Fill get_table_num(Trim$(ret_val.ret_string))
+  load_lists
+  
+                                        ' Turn off/disable the outer join checkbox
+  CHK_OUTER.Value = False
+  CHK_OUTER.Enabled = False
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Up Button Click Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub BTN_UP_Click()
+  Dim t_str As String                   ' Current path string
+  Dim t_pos As Integer                  ' Parsing variable
+  
+                                        ' Get the current path
+                                        ' If there's no colon, turn off up button
+                                        ' Else, find the last colon in the path
+                                        '  Put back rest of path
+  t_str = TXT_PATH.Text
+  If Instr(t_str, ":") <= 0 Then
+     t_str = ""
+     BTN_UP.Enabled = False
+  Else
+     t_pos = Len(t_str)
+     While Mid$(t_str, t_pos, 1) <> ":"
+        t_pos = t_pos - 1
+     Wend
+     t_str = Left$(t_str, t_pos - 1)
+  End If
+  TXT_PATH.Text = t_str
+
+                                        ' If this was a field terminated path, turn
+                                        '  back on the proper controls
+                                        ' Else, if no colons at all (empty), clear out
+                                        '  the proper variables
+                                        '   Else, strip necessary stuff off of the two
+                                        '    chain variables
+  If CLB_FIELDS.Enabled = False Then
+     CLB_FIELDS.Enabled = True
+     BTN_USE_DONE.Enabled = False
+     CLB_RELS.Enabled = True
+  Else
+     t_str = Cobj_TABLE_CHAIN.Contents
+     If Instr(t_str, ":") = 0 Then
+        Cobj_CUR_TABLE.Fill CLng(t_str)
+        Cobj_TABLE_CHAIN.Fill ""
+        TXT_CUR_OBJ.Text = Cobj_NAME_CHAIN.Contents
+        Cobj_NAME_CHAIN.Fill ""
+     Else
+        t_pos = Len(t_str)
+        While Mid$(t_str, t_pos, 1) <> ":"
+          t_pos = t_pos - 1
+        Wend
+        Cobj_CUR_TABLE.Fill CLng(Mid$(t_str, t_pos + 1, Len(t_str) - t_pos))
+        t_str = Left$(t_str, t_pos - 1)
+        Cobj_TABLE_CHAIN.Fill t_str
+        
+        t_str = Cobj_NAME_CHAIN.Contents
+        t_pos = Len(t_str)
+        While Mid$(t_str, t_pos, 1) <> ":"
+          t_pos = t_pos - 1
+        Wend
+        TXT_CUR_OBJ.Text = Mid$(t_str, t_pos + 1, Len(t_str) - t_pos)
+        Cobj_NAME_CHAIN.Fill Left$(t_str, t_pos - 1)
+     End If
+  End If
+  
+                                        ' Load lists for new table
+  load_lists
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Add Table Name and Number to Chain Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub add_to_chain(the_table As String, table_num As Long)
+  Dim t_str     As String               ' Current chain's contents
+  
+                                        ' Get table number chain
+                                        ' Add colon if needed
+                                        ' Add new number, and put back
+  t_str = Cobj_TABLE_CHAIN.Contents
+  If t_str <> "" Then
+     t_str = t_str + ":"
+  End If
+  t_str = t_str + Trim$(Str$(table_num))
+  Cobj_TABLE_CHAIN.Fill t_str
+  
+                                       ' Get table nbame chain
+                                        ' Add colon if needed
+                                        ' Add new name, and put back
+  t_str = Cobj_NAME_CHAIN.Contents
+  If t_str <> "" Then
+     t_str = t_str + ":"
+  End If
+  t_str = t_str + Trim$(the_table)
+  Cobj_NAME_CHAIN.Fill t_str
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Add a Relation to the Chains (used for initial parsing of old path)
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub add_rel_to_lists(the_rel As String)
+  Dim ret_str  As string_type           ' Result of query
+  Dim tbl_num  As Long                  ' Target table number
+
+                                        ' Get target table for relation name
+  get_target_table2 the_rel, ret_str
+
+                                        ' Get number for table name
+                                        ' Set table name and number
+                                        ' Add to the chains
+  tbl_num = get_table_num(ret_str.ret_string)
+  
+  TXT_CUR_OBJ.Text = ret_str.ret_string
+  Cobj_CUR_TABLE.Fill tbl_num
+  add_to_chain ret_str.ret_string, tbl_num
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Remove Last Items from the Lists
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub remove_last_items()
+  Dim t_chr As String                   ' Character from middle of string
+  Dim t_str As String                   ' Table name chain
+  Dim t_pos As Integer                  ' Parsing position
+  
+                                        ' Get name chain, and length
+                                        '  If it's got length
+                                        ' Find last colon
+  t_str = Cobj_NAME_CHAIN.Contents
+  t_pos = Len(t_str)
+  If t_pos > 0 Then
+    t_chr = Mid$(t_str, t_pos, 1)
+    While t_pos > 0 And t_chr <> ":"
+      t_pos = t_pos - 1
+      If t_pos > 0 Then
+        t_chr = Mid$(t_str, t_pos, 1)
+      End If
+    Wend
+  End If
+  
+                                        ' If none, fill in blank, else remove last
+                                        '  item
+  If t_pos <= 0 Then
+     Cobj_NAME_CHAIN.Fill ""
+  Else
+     Cobj_NAME_CHAIN.Fill Left$(t_str, t_pos - 1)
+  End If
+
+                                        ' Do the same for number chain
+  t_str = Cobj_TABLE_CHAIN.Contents
+  t_pos = Len(t_str)
+  If t_pos > 0 Then
+    t_chr = Mid$(t_str, t_pos, 1)
+    While t_pos > 0 And t_chr <> ":"
+      t_pos = t_pos - 1
+      If t_pos > 0 Then
+        t_chr = Mid$(t_str, t_pos, 1)
+      End If
+    Wend
+  End If
+  
+  If t_pos <= 0 Then
+     Cobj_TABLE_CHAIN.Fill ""
+  Else
+     Cobj_TABLE_CHAIN.Fill Left$(t_str, t_pos - 1)
+  End If
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Parse Path Passed into Form
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub parse_path(the_path As String)
+  Dim t_pos    As Integer               ' Parsing position
+  Dim new_pos  As Integer               ' Parsing position
+  Dim one_item As String                ' Item parsed from string
+  Dim first    As Boolean               ' First pass??
+  
+                                        ' Set the path in the text field
+                                        ' Set state of controls
+  TXT_PATH.Text = the_path
+  BTN_UP.Enabled = True
+  CLB_FIELDS.Enabled = False
+  CLB_RELS.Enabled = False
+
+                                        ' Parse through the path
+                                        ' If no more colons, on the last item, set
+                                        '  the "current" objects
+  t_pos = 1
+  If Instr(the_path, ":") = 0 Then
+     TXT_CUR_OBJ.Text = Cobj_NAME_CHAIN.Contents
+     Cobj_CUR_TABLE.Fill CLng(Cobj_TABLE_CHAIN.Contents)
+     Goto last_item
+  End If
+  
+                                        ' While there's more to do...
+                                        ' Get the next colon, strip out next item
+                                        ' If it's the last item, set control states
+                                        ' Else, add the relation to the list and 
+                                        '  do the next one
+  While t_pos > 0
+    new_pos = Instr(t_pos, the_path, ":")
+    If new_pos = 0 Then
+last_item:
+       one_item = Mid$(the_path, t_pos, Len(the_path) - t_pos + 1)
+       t_pos = 0
+       BTN_UP.Enabled = True
+       CLB_RELS.Clear
+       CLB_FIELDS.Clear
+       CLB_RELS.Enabled = False
+       CLB_FIELDS.Enabled = False
+       BTN_USE_DONE.Enabled = True
+       remove_last_items
+    Else
+       one_item = Mid$(the_path, t_pos, new_pos - t_pos)
+       add_rel_to_lists one_item
+       t_pos = new_pos + 1
+    End If
+  Wend
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Load Field/Relation Lists for a Table
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub load_lists()
+  Dim ret_val  As string_type           ' Return value from query
+  Dim ret_rel  As rel_type              ' Return value from list of query
+  Dim fld_list As New List              ' List of field names
+  Dim rel_list As New List              ' List of relation names
+  Dim t_int    As Integer               ' Looping integer
+  Dim f_list   As New List              ' List of address records for field grid
+  Dim r_list   As New List              ' List of address records for rels grid
+  Dim t_rec    As Record                ' Record built 
+  Dim rel_type As Integer               ' Relation type
+  
+                                        ' Set list types
+  fld_list.ItemType = "string_type"
+  rel_list.ItemType = "rel_type"
+  f_list.ItemType = "record"
+  r_list.ItemType = "record"
+
+                                        ' Query for field names
+  get_field_names Cobj_CUR_TABLE.Contents, fld_list
+
+                                        ' Put fields in list of records  
+  For t_int = 0 To fld_list.Count - 1
+    fld_list.GetItemByIndex t_int, ret_val
+    Set t_rec = New Record
+    t_rec.RecordType = "address"
+    t_rec.SetField "address", Trim$(ret_val.ret_string)
+    f_list.AppendItem t_rec
+  Next t_int
+  Cobj_LOR_FIELDS.Fill f_list
+  
+                                        ' Query for relations
+  get_relations Cobj_CUR_TABLE.Contents, rel_list
+
+                                        ' Loop through the relations
+                                        ' Get each one
+                                        ' Get the relation, and get it down to 1-5
+                                        ' If no OTMs allowed, if it isn't OTOP or MTO
+                                        '  then get the next one
+  For t_int = 0 To rel_list.Count - 1
+    rel_list.GetItemByIndex t_int, ret_rel
+    rel_type = ret_rel.rel_type
+    While rel_type > 8
+      rel_type = rel_type - 8
+    Wend
+    If Cobj_ALLOW_OTM.Contents = 0 Then
+       If rel_type <> 2 And rel_type <> 3 Then Goto next_one
+    End If
+    
+                                        ' Else, build the record and add to list
+    Set t_rec = New Record
+    t_rec.RecordType = "address"
+    t_rec.SetField "address", Trim$(ret_rel.ret_string)
+    r_list.AppendItem t_rec
+next_one:
+  Next t_int
+
+  Cobj_LOR_RELS.Fill r_list
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Use/Done Button Click Mthod
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub BTN_USE_DONE_Click
+                                        ' Send path to parent
+                                        ' Close the form
+  Me.NotifyParent cbFirstMessage + 3, TXT_PATH.Text
+  Me.NotifyParent cbFirstMessage + 5, Str$(field_type)
+  Me.Close
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Message Handler
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub Message(ByVal num As Long, ByVal info As String)
+                                        ' Methods:
+                                        '          Close - Close the form
+                                        '          + 1   - Allow OTM, OTOF, MTM relations
+                                        '          + 2   - Set the form's caption
+                                        '          + 3   - New path - the starting table
+                                        '                   is passed in
+                                        '          + 4   - Existing path (starting table)
+                                        '          + 5   - Existing path (path string)
+                                        '          + 6   - Outer joins allowed for this form
+  Select Case num
+    Case cbCloseMessage
+      Me.Close
+    Case cbFirstMessage + 1
+      Cobj_ALLOW_OTM.Fill 1
+    Case cbFirstMessage + 2
+      Me.Caption = info
+    Case cbFirstMessage + 3
+      BTN_UP.Enabled = False
+      CLB_FIELDS.Enabled = True
+      CLB_RELS.Enabled = True
+      Cobj_PATH.Fill ""
+      Cobj_CUR_OBJ.Fill info
+      Cobj_CUR_TABLE.Fill get_table_num(info)
+      load_lists
+    Case cbFirstMessage + 4
+      add_to_chain info, get_table_num(info)
+    Case cbFirstMessage + 5
+      parse_path info
+    Case cbFirstMessage + 6
+      CHK_OUTER.Visible = True
+      CHK_OUTER.Enabled = False
+    Case Else
+      Me.DoDefault
+  End Select
+End Sub

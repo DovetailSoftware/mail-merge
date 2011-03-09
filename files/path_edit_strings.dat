@@ -1,0 +1,80 @@
+OBJECT TYPE = "fc_string", NAME="268435864"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=12300;
+   locale="EN_US";
+   application="";
+   string="Path:";
+  END_FIELDS
+END_OBJECT NAME="268435864"
+
+OBJECT TYPE = "fc_string", NAME="268435865"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=12301;
+   locale="EN_US";
+   application="";
+   string="Fields:";
+  END_FIELDS
+END_OBJECT NAME="268435865"
+
+OBJECT TYPE = "fc_string", NAME="268435866"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=12302;
+   locale="EN_US";
+   application="";
+   string="Relations:";
+  END_FIELDS
+END_OBJECT NAME="268435866"
+
+OBJECT TYPE = "fc_string", NAME="268435867"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=12303;
+   locale="EN_US";
+   application="";
+   string="Current Object:";
+  END_FIELDS
+END_OBJECT NAME="268435867"
+
+OBJECT TYPE = "fc_string", NAME="268435868"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=12304;
+   locale="EN_US";
+   application="";
+   string="Up";
+  END_FIELDS
+END_OBJECT NAME="268435868"
+
+OBJECT TYPE = "fc_string", NAME="268435869"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=12305;
+   locale="EN_US";
+   application="";
+   string="Use/Done";
+  END_FIELDS
+END_OBJECT NAME="268435869"
+
+OBJECT TYPE = "fc_string", NAME="268435870"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=12306;
+   locale="EN_US";
+   application="";
+   string="Done";
+  END_FIELDS
+END_OBJECT NAME="268435870"
+
+OBJECT TYPE = "fc_string", NAME="268435871"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=12307;
+   locale="EN_US";
+   application="";
+   string="Outer Join";
+  END_FIELDS
+END_OBJECT NAME="268435871"
+

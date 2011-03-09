@@ -1,0 +1,162 @@
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''' 
+'                                                                          
+' Product        :  Query Anything
+'                                                                           
+' Name           :  at_2200_fd.cbs                                           
+'                                                                           
+' Description    :  Provides code for Path Editor routines that use
+'                    SQLDB calls. Must be in a separate module so that
+'                    3-tier Clarify customers can compile this module
+'                    on the App Server.
+'
+' Author          : First Choice Software, Inc.                             
+'                   4412 Spicewood Springs Road, Suite 701                            
+'                   Austin, TX 78759                                       
+'                   (512) 418-2905                                          
+'                                                                           
+' Platforms       : This version supports Clarify 5.0 and later             
+'                                                                           
+' Copyright (C)  1998 First Choice Software, Inc.                           
+' All Rights Reserved                                                       
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Option Explicit
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Data Type Definitions
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+                                        ' Type declarations
+Type long_type
+  ret_long As Long
+End Type
+
+Type string_type
+  ret_string As String * 255
+End Type
+Global dummy As string_type
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get the common data type for the specified field
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Function get_cmn_type(the_field As String, type_id As Integer) As Integer
+  Dim sql_str  As String                ' SQL String to execute
+  Dim query    As New SQLDB             ' SQL connection to Clarify DB
+  Dim ret_list As New List              ' Returned list of objects
+  Dim ret_obj  As long_type             ' Returned object
+      
+                                        ' Build/execute query
+  ret_list.ItemType = "long_type"
+  sql_str = "select cmn_type from adp_sch_info where type_id = " + _
+            Str$(type_id) + " and field_name = '" + _
+            Trim$(the_field) + "'"
+  query.Select sql_str, ret_list
+                                        ' Get returned object
+  ret_list.GetItemByIndex 0, ret_obj
+  Select Case ret_obj.ret_long
+    Case 512
+     get_cmn_type = 1
+    Case 514
+     get_cmn_type = 2
+    Case 516
+     get_cmn_type = 0
+    Case 609
+     get_cmn_type = 3
+    Case 766
+     get_cmn_type = 4
+  End Select
+End Function
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get Table Number for a Name Method
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Function get_table_num(table_name As String)
+  Dim sql_str As String                 ' SQL statement
+  Dim query   As New SQLDB              ' Structure to run SQL
+  Dim ret_val As long_type              ' Variable returned from SQL
+
+                                        ' Build and execute SQL
+                                        ' Return result
+  sql_str = "select type_id from adp_tbl_name_map where type_name = '" + _
+             Trim$(table_name) + "'"
+  query.Select sql_str, ret_val
+  get_table_num = ret_val.ret_long
+End Function
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get Target Table For a Relation
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub get_target_table(type_id As Integer, rel_name As String, _
+                            ret_val As string_type)
+  Dim sql_str As String                 ' SQL statement
+  Dim query   As New SQLDB              ' Structure to execute SQL
+
+                                        ' Get new table name from the relation
+  sql_str = "select target_name from adp_sch_rel_info where type_id = " + _
+            Str$(type_id) + " and rel_name = '" + _
+            Trim$(rel_name) + "'"
+  query.Select sql_str, ret_val
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get Target Table For a Relation
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub get_target_table2(rel_name As String, ret_val As string_type)
+  Dim sql_str As String                 ' SQL statement
+  Dim query   As New SQLDB              ' Structure to execute SQL
+
+                                        ' Get new table name from the relation
+  sql_str = "select target_name from adp_sch_rel_info where rel_name = '" + _
+            Trim$(rel_name) + "'"
+  query.Select sql_str, ret_val
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get List of Field Names For a Table
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub get_field_names(type_id As Integer, fld_list As List)
+  Dim sql_str  As String                ' SQL Statement
+  Dim query    As New SQLDB             ' Structure to execute SQL
+
+                                        ' Query for field names
+                                        ' Put into grid control
+  sql_str = "select field_name from adp_sch_info where type_id = " + _
+            Str$(type_id) + " order by field_name"
+  query.Select sql_str, fld_list
+End Sub
+
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get List of Relation Names For a Table
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub get_relations(type_id As Integer, rel_list As List)
+  Dim sql_str  As String                ' SQL Statement
+  Dim query    As New SQLDB             ' Structure to execute SQL
+
+                                        ' Query for relations
+                                        ' (If allow OTM, add that to query)
+                                        ' Put in grid
+  sql_str = "select rel_type, rel_name from adp_sch_rel_info where type_id = " + _
+            Str$(type_id) & " order by rel_name"
+  query.Select sql_str, rel_list
+End Sub

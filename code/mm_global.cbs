@@ -1,0 +1,126 @@
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Product        : Clarify Mail Merge(tm)
+'
+' Series         : First Choice Workflow Series(tm)
+'
+' Name           : mm_global.cbs
+'
+' Description    : Sample global file to add MM to a menu
+'
+' Author         : First Choice Software, Inc.
+'                  8900 Business Park Drive
+'                  Austin, TX  78759
+'                  (512) 418-2905
+'                  EMAIL: support@fchoice.com
+'                  www.fchoice.com
+'
+' Platforms      : This version supports Clarify 4.0 and later
+'
+' Copyright (C)  2002 First Choice Software, Inc.
+' All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Functional Declarations
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Option Explicit
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Global Variables
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Global fc_abday      As String
+Global fc_abmon      As String
+Global fc_am_pm      As String
+Global fc_d_fmt      As String
+Global fc_d_t_fmt    As String
+Global fc_date_str   As String   'holds the latest date process by the date dialog box
+Global fc_day        As String
+Global fc_mon        As String
+Global fc_t_fmt      As String
+Global fc_t_fmt_ampm As String
+
+Global Locale As String                 ' Locale for program
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get the locale for the user
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub set_locale()
+  Dim t_ret  As New BulkRetrieve
+  Dim t_list As List
+  Dim t_rec  As Record
+
+  If Trim$(locale) <> "" Then Exit Sub
+  locale = Trim$(Environ("LC_STRING"))
+  If locale = "" Then
+     locale = Trim$(Environ("LC_ALL"))
+  End If
+  If locale = "" Then
+     locale = "EN_US"
+  End If
+
+                   ' Set locale defaults based on fc_locale record
+  t_ret.SimpleQuery  0, "fc_locale"
+  t_ret.AppendFilter 0, "locale_name", cbEqual, locale
+  t_ret.RetrieveRecords
+  Set t_list = t_ret.GetRecordList(0)
+  If t_list.count > 0 Then
+    Set t_rec = t_list.ItemByIndex(0)
+    fc_abday      = t_rec.GetField("abday")
+    fc_day        = t_rec.GetField("day")
+    fc_abmon      = t_rec.GetField("abmon")
+    fc_mon        = t_rec.GetField("mon")
+    fc_d_t_fmt    = t_rec.GetField("d_t_fmt")
+    fc_d_fmt      = t_rec.GetField("d_fmt")
+    fc_t_fmt      = t_rec.GetField("t_fmt")
+    fc_am_pm      = t_rec.GetField("am_pm")
+    fc_t_fmt_ampm = t_rec.GetField("t_fmt_ampm")
+  End If    
+End Sub
+
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Initialize the Application
+'
+' Copyright (C) 2002. First Choice Software, Inc. All Rights Reserved
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub initialize_app() 
+  Dim pc_menu As New AppMenu            ' Menu bar for P&C
+
+                   ' Get the locale for the user
+  set_locale
+  
+                   ' NOTE!!!! If you wish the MM GUI to be shown in a different
+                   '  Clarify product (other than the default Policies & Customers), you
+                   '  must change the MenuBarID below. See the Clarify documentation
+                   '  for more details on this process.
+
+                   ' Add GUI for MM
+  pc_menu.MenuBarID = 1001
+  pc_menu.additem "Desktop", "Mail Merge Profile", "mail_merge"
+
+                   ' Show the menus
+  App.ShowDefaultMenu  
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Show MM GUI
+'
+' Copyright (C) 2002. First Choice Software, Inc. All Rights Reserved
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub mail_merge_click()
+  Dim new_form As New Form              ' New form variable
+  
+                   ' Show the new form
+  new_form.Show 4260, cbFrontIfUp
+End Sub

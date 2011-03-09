@@ -1,0 +1,79 @@
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Product        : Clarify Mail Merge(tm)
+'
+' Series         : First Choice Workflow Series(tm)
+'
+' Name           : mm420.cbs
+'
+' Description    : Sample Mail Merge From Case Form
+'
+' Author         : First Choice Software, Inc.
+'                  8900 Business Park Drive
+'                  Austin, TX  78759
+'                  (512) 418-2905
+'                  EMAIL: support@fchoice.com
+'                  www.fchoice.com
+'
+' Platforms      : This version supports Clarify 4.0 and later
+'
+' Copyright (C)  2002 First Choice Software, Inc.
+' All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Functional Declarations
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Option Explicit
+
+                   ' You must declare this API header, as it is external to this file
+Declare Public Function mail_merge(doc_template As String, output_doc As String, _
+                           profile_name As String, root_objid As Long, _
+                           attach_doc As Boolean, attach_name As String, _
+                           use_autonumber As Boolean, show_it As Boolean) As Integer
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Form Load Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub Form_Load()
+  Me.DoDefault
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Mail Merge Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_MERGE_Click()
+  Dim case_rec As Record                ' Case object we'll merge
+  Dim ret_int  As Integer               ' Return integer from API
+  
+                   ' Get the case record
+                   ' Perform the mail merge
+                   ' If there was an erorr, tell them
+  Set case_rec = Cobj_CASE_OBJ.Contents
+  ret_int = mail_merge("c:\docs\" & DDL_SAMPLE_MERGE.Selected, "c:\output\sample_out.doc", _
+                       "Case Vars", case_rec.GetField("objid"), True, "Sample attachment", True, True)
+  If ret_int <> 0 Then
+     Select Case ret_int
+       Case -1
+         App.MsgBox "Error in merging. Could not find input file"
+       Case -2
+         App.MsgBox "Error in merging. Could not find merge variable profile"
+       Case -3
+         App.MsgBox "Error in merging. Could not find root record for this profile type"
+       Case -4
+         App.MsgBox "Error in merging. Could not open Word application."
+       Case -5
+         App.MsgBox "Error in merging. Could not initialize Word application."
+     End Select
+     Debug.Print "Failure. Return code = " & Trim$(Str$(ret_int))
+  End If
+  
+End Sub

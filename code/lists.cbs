@@ -1,0 +1,529 @@
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Product        :  Source Control Interface(tm)
+'
+' Series         :  First Choice Interface Series(tm)
+'
+' Name           :  Internationalized List Routines
+'
+' Description    :  Allows internationlized lists to be used
+'                   and displayed on Clarify forms
+'
+' Author          : First Choice Software, Inc.
+'                   4412 Spicewood Springs Road
+'                   Suite 701
+'                   Austin, TX  78759
+'                   (512) 418-2905
+'                   EMAIL: support@fchoice.com
+'                   www.fchoice.com
+'
+' Platforms       : This version supports Clarify 4.5 and later
+'
+' Copyright (C)  1998 First Choice Software, Inc.
+' All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Functional Declarations
+'
+' Copyright (C) 1998. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+OPTION EXPLICIT
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Copyright (C) 1998. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Function get_list_objids(list_name As String, application As String, _
+                  locale As String, list_level As Integer, obj1 As Long, _
+                  obj2 As Long, obj3 As Long, obj4 As Long, obj5 As Long, _
+                  obj6 As Long, obj7 As Long, obj8 As Long) As Integer
+  Dim t_ret     As New BulkRetrieve
+  Dim t_list    As List
+  Dim t_rec     As Record
+  Dim t_int     As Integer
+
+  t_ret.SimpleQuery 0, "fc_list_hdr"
+  t_ret.AppendFilter 0, "title", cbEqual, list_name
+' t_ret.AppendFilter 0, "application", cbEqual, application
+  If Trim$(application) <> "" Then
+    t_ret.AppendFilter 0, "application", cbLike, application + "%"
+  End If
+  t_ret.TraverseFromParent 1, "hdr2fc_list_level", 0
+  t_ret.TraverseFromParent 2, "level2fc_list_elm", 1
+  t_ret.AppendFilter 2, "state", cbLess, 2
+  t_ret.AppendSort 2, "rank", cbAscending
+  t_ret.RetrieveRecords
+  Set t_list = t_ret.GetRecordList(2)
+
+  For t_int = 1 To list_level
+    Select Case t_int
+      Case 1
+        Set t_rec = t_list.ItemByIndex(obj1)
+        obj1 = t_rec.GetField("objid")
+      Case 2
+        Set t_rec = t_list.ItemByIndex(obj2)
+        obj2 = t_rec.GetField("objid")
+      Case 3
+        Set t_rec = t_list.ItemByIndex(obj3)
+        obj3 = t_rec.GetField("objid")
+      Case 4
+        Set t_rec = t_list.ItemByIndex(obj4)
+        obj4 = t_rec.GetField("objid")
+      Case 5
+        Set t_rec = t_list.ItemByIndex(obj5)
+        obj5 = t_rec.GetField("objid")
+      Case 6
+        Set t_rec = t_list.ItemByIndex(obj6)
+        obj6 = t_rec.GetField("objid")
+      Case 7
+        Set t_rec = t_list.ItemByIndex(obj7)
+        obj7 = t_rec.GetField("objid")
+      Case 8
+        Set t_rec = t_list.ItemByIndex(obj8)
+        obj8 = t_rec.GetField("objid")
+    End Select
+
+    If t_int < list_level Then
+       t_ret.Clear
+       t_ret.SetRoot t_rec
+       t_ret.TraverseFromRoot 0, "parent2fc_list_level"
+       t_ret.TraverseFromParent 1, "level2fc_list_elm", 0
+       t_ret.AppendFilter 1, "state", cbLess, 2
+       t_ret.AppendSort 1, "rank", cbAscending
+       t_ret.RetrieveRecords
+       Set t_list = t_ret.GetRecordList(1)
+    End If
+  Next t_int
+  get_list_objids = 0
+End Function
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Copyright (C) 1998. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Function set_lists(list_name As String, application As String, _
+                   locale As String, list_level As Integer, _
+                   obj1 As Long, obj2 As Long, obj3 As Long, _
+                   obj4 As Long, obj5 As Long, obj6 As Long, _
+                   obj7 As Long, obj8 As Long, list1 As List, _
+                   list2 As List, list3 As List, list4 As List, _
+                   list5 As List, list6 As List, list7 As List, _
+                   list8 As List) As Integer
+  Dim t_ret     As New BulkRetrieve
+  Dim t_list    As List
+  Dim t_rec     As Record
+  Dim ret_list  As List
+  Dim def_rec   As Record
+  Dim cur_level As Integer
+  Dim t_int     As Integer
+  Dim loc_list  As List
+  Dim loc_rec   As Record
+  Dim t_objid   As Long
+  Dim t_str     As String
+
+  list1.ItemType = "String"
+  list2.ItemType = "String"
+  list3.ItemType = "String"
+  list4.ItemType = "String"
+  list5.ItemType = "String"
+  list6.ItemType = "String"
+  list7.ItemType = "String"
+  list8.ItemType = "String"
+
+  t_ret.SimpleQuery 0, "fc_list_hdr"
+  t_ret.AppendFilter 0, "title", cbEqual, list_name
+' t_ret.AppendFilter 0, "application", cbEqual, application
+  If Trim$(application) <> "" Then
+    t_ret.AppendFilter 0, "application", cbLike, application + "%"
+  End If
+  t_ret.TraverseFromParent 1, "hdr2fc_list_level", 0
+  t_ret.TraverseFromParent 2, "level2fc_list_elm", 1
+  t_ret.AppendFilter 2, "state", cbLess, 2
+  t_ret.AppendSort 2, "rank", cbAscending
+  t_ret.TraverseFromParent 3, "locs2fc_list_locelm", 2
+  t_ret.AppendFilter 3, "locale", cbEqual, locale
+  t_ret.RetrieveRecords
+
+  Set t_list = t_ret.GetRecordList(2)
+  cur_level = 1
+
+  While cur_level <= list_level
+    Select Case cur_level
+      Case 1
+       t_objid = obj1
+       Set ret_list = list1
+      Case 2
+       t_objid = obj2
+       Set ret_list = list2
+      Case 3
+       t_objid = obj3
+       Set ret_list = list3
+      Case 4
+       t_objid = obj4
+       Set ret_list = list4
+      Case 5
+       t_objid = obj5
+       Set ret_list = list5
+      Case 6
+       t_objid = obj6
+       Set ret_list = list6
+      Case 7
+       t_objid = obj7
+       Set ret_list = list7
+      Case 8
+       t_objid = obj8
+       Set ret_list = list8
+    End Select
+       
+    Set def_rec = Nothing
+    For t_int = 0 To t_list.Count - 1
+      Set t_rec = t_list.ItemByIndex(t_int)
+      Set loc_list = t_ret.GetRelatedRecordList(t_rec, "locs2fc_list_locelm")
+      If loc_list.Count = 0 Then
+         t_str = " "
+      Else
+         Set loc_rec = loc_list.ItemByIndex(0)
+         t_str = loc_rec.GetField("title")
+      End If
+      If t_rec.GetField("objid") = t_objid Then
+         Set def_rec = t_rec
+         Select Case cur_level
+           Case 1
+            obj1 = t_int
+           Case 2
+            obj2 = t_int
+           Case 3
+            obj3 = t_int
+           Case 4
+            obj4 = t_int
+           Case 5
+            obj5 = t_int
+           Case 6
+            obj6 = t_int
+           Case 7
+            obj7 = t_int
+           Case 8
+            obj8 = t_int
+         End Select
+      End If
+      ret_list.AppendItem t_str
+    Next t_int
+
+    If def_rec Is Nothing Then
+       set_lists = -1
+       Exit Function
+    End If
+
+    t_ret.Clear
+    t_ret.SetRoot def_rec
+    t_ret.TraverseFromRoot 0, "parent2fc_list_level"
+    t_ret.TraverseFromParent 1, "level2fc_list_elm", 0
+    t_ret.AppendFilter 1, "state", cbLess, 2
+    t_ret.AppendSort 1, "rank", cbAscending
+    t_ret.TraverseFromParent 2, "locs2fc_list_locelm", 1
+    t_ret.AppendFilter 2, "locale", cbEqual, locale
+    t_ret.RetrieveRecords
+    Set t_list = t_ret.GetRecordList(1)
+
+    cur_level = cur_level + 1
+  Wend
+
+  set_lists = 0
+End Function
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Copyright (C) 1998. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Function get_list_level(list_name As String, application As String, _
+                   locale As String, list_level As Integer, _
+                   list1 As List, list2 As List, list3 As List, _
+                   list4 As List, list5 As List, list6 As List, _
+                   list7 As List, list8 As List, lev1 As Integer, _
+                   lev2 As Integer, lev3 As Integer, lev4 As Integer, _
+                   lev5 As Integer, lev6 As Integer, lev7 As Integer, _
+                   lev8 As Integer) As Integer
+  Dim ret_list  As List
+  Dim t_ret     As New BulkRetrieve
+  Dim t_list    As List
+  Dim elm_rec   As Record
+  Dim loc_list  As List
+  Dim loc_rec   As Record
+  Dim t_int     As Integer
+  Dim t_loop    As Integer
+  Dim cur_level As Integer
+  Dim cur_ind   As Integer
+  Dim sel_elm   As Record
+  Dim def_rec   As Record
+  Dim t_str     As String
+  Dim done      As Boolean
+  Dim temp_rank As Integer
+  Dim true_rank As Integer
+
+  list1.ItemType = "String"
+  list2.ItemType = "String"
+  list3.ItemType = "String"
+  list4.ItemType = "String"
+  list5.ItemType = "String"
+  list6.ItemType = "String"
+  list7.ItemType = "String"
+  list8.ItemType = "String"
+  cur_level = 1
+
+  t_ret.SimpleQuery 0, "fc_list_hdr"
+  t_ret.AppendFilter 0, "title", cbEqual, list_name
+' t_ret.AppendFilter 0, "application", cbEqual, application
+  If Trim$(application) <> "" Then
+    t_ret.AppendFilter 0, "application", cbLike, application + "%"
+  End If
+  t_ret.TraverseFromParent 1, "hdr2fc_list_level", 0
+  t_ret.TraverseFromParent 2, "level2fc_list_elm", 1
+  t_ret.AppendFilter 2, "state", cbLess, 2
+  t_ret.AppendSort 2, "rank", cbAscending
+  t_ret.TraverseFromParent 3, "locs2fc_list_locelm", 2
+  t_ret.AppendFilter 3, "locale", cbEqual, locale
+  t_ret.RetrieveRecords
+
+  cur_ind = lev1
+  Set ret_list = list1
+  Set t_list = t_ret.GetRecordList(2)
+  While cur_level < list_level
+    t_int = 0
+    t_loop = 0
+    While t_int <= cur_ind
+      Set sel_elm = t_list.ItemByIndex(t_loop)
+      If sel_elm.GetField("state") < 2 Then
+         t_int = t_int + 1
+      End If
+      t_loop = t_loop + 1
+    Wend
+ 
+    t_ret.Clear
+    t_ret.SetRoot sel_elm
+    t_ret.TraverseFromRoot 0, "parent2fc_list_level"
+    t_ret.TraverseFromParent 1, "level2fc_list_elm", 0
+    t_ret.AppendFilter 1, "state", cbLess, 2
+    t_ret.AppendSort 1, "rank", cbAscending
+    t_ret.TraverseFromParent 2, "locs2fc_list_locelm", 1
+    t_ret.AppendFilter 2, "locale", cbEqual, locale
+    t_ret.RetrieveRecords
+    Set t_list = t_ret.GetRecordList(1)
+
+    cur_level = cur_level + 1
+    Select Case cur_level
+      Case 2
+       cur_ind = lev2
+       Set ret_list = list2
+      Case 3
+       cur_ind = lev3
+       Set ret_list = list3
+      Case 4
+       cur_ind = lev4
+       Set ret_list = list4
+      Case 5
+       cur_ind = lev5
+       Set ret_list = list5
+      Case 6
+       cur_ind = lev6
+       Set ret_list = list6
+      Case 7
+       cur_ind = lev7
+       Set ret_list = list7
+    End Select
+  Wend
+
+  Set def_rec = Nothing
+  temp_rank = -1
+  For t_int = 0 To t_list.Count - 1
+    Set elm_rec = t_list.ItemByIndex(t_int)
+    If elm_rec.GetField("state") = 2 Then Goto next_item
+    temp_rank = temp_rank + 1
+    Set loc_list = t_ret.GetRelatedRecordList(elm_rec, "locs2fc_list_locelm")
+    If loc_list.Count = 0 Then
+       t_str = " "
+    Else
+       Set loc_rec = loc_list.ItemByIndex(0)
+       t_str = loc_rec.GetField("title")
+    End If
+    ret_list.AppendItem t_str
+    If def_rec Is Nothing Then
+       Set def_rec = elm_rec
+       true_rank = temp_rank
+    Else
+       If elm_rec.GetField("state") = 0 Then
+          Set def_rec = elm_rec
+          true_rank = temp_rank
+       End If
+    End If
+next_item:
+  Next t_int
+
+  cur_level = cur_level + 1
+  done = False
+  While Not Done
+    Select Case cur_level
+      Case 2
+        Set ret_list = list2
+        lev1 = true_rank
+      Case 3
+        Set ret_list = list3
+        lev2 = true_rank
+      Case 4
+        Set ret_list = list4
+        lev3 = true_rank
+      Case 5
+        Set ret_list = list5
+        lev4 = true_rank
+      Case 6
+        Set ret_list = list6
+        lev5 = true_rank
+      Case 7
+        Set ret_list = list7
+        lev6 = true_rank
+      Case 8
+        Set ret_list = list8
+        lev7 = true_rank
+      Case Else
+        debug.print "Not there yet!!"
+    End Select
+
+    t_ret.Clear
+    t_ret.SetRoot def_rec
+    t_ret.TraverseFromRoot 0, "parent2fc_list_level"
+    t_ret.TraverseFromParent 1, "level2fc_list_elm", 0
+    t_ret.AppendFilter 1, "state", cbLess, 2
+    t_ret.AppendSort 1, "rank", cbAscending
+    t_ret.TraverseFromParent 2, "locs2fc_list_locelm", 1
+    t_ret.AppendFilter 2, "locale", cbEqual, locale
+    t_ret.RetrieveRecords
+
+    Set t_list = t_ret.GetRecordList(1)
+    Set def_rec = Nothing
+    If t_list.Count = 0 Then
+       Done = True
+    Else
+       temp_rank = -1
+       For t_int = 0 To t_list.Count - 1
+         Set elm_rec = t_list.ItemByIndex(t_int)
+         If elm_rec.GetField("state") < 2 Then
+            temp_rank = temp_rank + 1
+            Set loc_list = t_ret.GetRelatedRecordList(elm_rec, "locs2fc_list_locelm")
+            If loc_list.Count = 0 Then
+               t_str = " "
+            Else
+               Set loc_rec = loc_list.ItemByIndex(0)
+               t_str = loc_rec.GetField("title")
+            End If
+            ret_list.AppendItem t_str
+            If def_rec Is Nothing Then
+               Set def_rec = elm_rec
+               true_rank = temp_rank
+            Else
+               If elm_rec.GetField("state") = 0 Then
+                  Set def_rec = elm_rec
+                  true_rank = temp_rank
+               End If
+            End If
+         End If
+       Next t_int
+    End If
+    cur_level = cur_level + 1
+  Wend
+
+  get_list_level = 0
+End Function
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Copyright (C) 1998. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub test()
+  Dim ret_int As Integer
+  Dim t_int   As Integer
+  Dim list1   As New List
+  Dim list2   As New List
+  Dim list3   As New List
+  Dim list4   As New List
+  Dim list5   As New List
+  Dim list6   As New List
+  Dim list7   As New List
+  Dim list8   As New List
+  Dim lev1    As Integer
+  Dim lev2    As Integer
+  Dim lev3    As Integer
+  Dim lev4    As Integer
+  Dim lev5    As Integer
+  Dim lev6    As Integer
+  Dim lev7    As Integer
+  Dim lev8    As Integer
+  Dim llev1   As Long
+  Dim llev2   As Long
+  Dim llev3   As Long
+  Dim llev4   As Long
+  Dim llev5   As Long
+  Dim llev6   As Long
+  Dim llev7   As Long
+  Dim llev8   As Long
+
+  llev1 = 1
+  llev2 = 2
+  llev3 = 1
+  ret_int = get_list_objids("SCI Activity", "", "EN_US", 3, llev1, llev2, _
+                llev3, llev4, llev5, llev6, llev7, llev8)
+  debug.print "Objid 1: " + Str$(llev1)
+  debug.print "Objid 2: " + Str$(llev2)
+  debug.print "Objid 3: " + Str$(llev3)
+
+'  llev1 = 268435525
+'  llev2 = 268435530
+'  llev3 = 268435536
+'  ret_int = set_lists("SCI Activity", "", "EN_US", 3, llev1, llev2, llev3, _
+'                      llev4, llev5, llev6, llev7, llev8, list1, list2, _
+'                      list3, list4, list5, list6, list7, list8)
+
+'  debug.print "Level 1:"
+'  For t_int = 0 To list1.Count - 1
+'    debug.Print list1.ItemByIndex(t_int)
+'  Next t_int
+'  debug.print "Default item is: " + Trim$(Str$(llev1))
+
+'  debug.print
+'  debug.print "Level 2:"
+'  For t_int = 0 To list2.Count - 1
+'    debug.Print list2.ItemByIndex(t_int)
+'  Next t_int
+'  debug.print "Default item is: " + Trim$(Str$(llev2))
+
+'  debug.print
+'  debug.print "Level 3:"
+'  For t_int = 0 To list3.Count - 1
+'    debug.Print list3.ItemByIndex(t_int)
+'  Next t_int
+'  debug.print "Default item is: " + Trim$(Str$(llev3))
+
+'  lev1 = 1
+'  lev2 = 0
+'  ret_int = get_list_level("SCI Activity", "", "FR_FR", 1, list1, list2, _
+'      list3, list4, list5, list6, list7, list8, lev1, lev2, lev3, lev4, _
+'      lev5, lev6, lev7, lev8)
+
+'  debug.print "Level 1:"
+'  For t_int = 0 To list1.Count - 1
+'    debug.Print list1.ItemByIndex(t_int)
+'  Next t_int
+'  debug.print "Default item is: " + Trim$(Str$(lev1))
+
+'  debug.print
+'  debug.print "Level 2:"
+'  For t_int = 0 To list2.Count - 1
+'    debug.Print list2.ItemByIndex(t_int)
+'  Next t_int
+'  debug.print "Default item is: " + Trim$(Str$(lev2))
+
+'  debug.print
+'  debug.print "Level 3:"
+'  For t_int = 0 To list3.Count - 1
+'    debug.Print list3.ItemByIndex(t_int)
+'  Next t_int
+'  debug.print "Default item is: " + Trim$(Str$(lev3))
+
+End Sub

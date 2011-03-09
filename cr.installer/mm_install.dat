@@ -1,0 +1,152 @@
+[variables]
+new_form_version=mm1.0
+
+[new_tables]
+;table_num|table_name|comment|obj_group
+3500|fc_string|Locale-based strings for First Choice Software Customizations|FC I18N
+3501|fc_list_hdr|Header record for First Choice Software list object|FC I18N
+3502|fc_list_level|One level of a First Choice Software list|FC I18N
+3503|fc_list_elm|One element in a First Choice Software list|FC I18N
+3504|fc_list_locelm|One locale string for an element in a First Choice Software list|FC I18N
+3505|fc_locale|Locale Details|FC I18N
+4260|mm_profile|Profile of mail merge variables|MM
+4261|mm_var|A variables for a mail merge profile|MM
+
+[new_table_fields]
+;table|field_name|type|array_size|fld_default|gen_fld_id|other|comment
+;new fc_string fields
+3500|id|long||null|||String ID
+3500|string|char|255|null|||Text of the string
+3500|locale|char|20|null|||Indicates the locale of the string; e.g., EN_US=US English, JA_JP=Japanese in Japan
+3500|application|char|80|null|||Application where string is used
+3500|dev|long||null|||Row version number for mobile distribution purposes
+
+;new fc_list_hdr fields
+3501|title|char|80|null|||Name of the list
+3501|description|char|255|null|||Description of the list
+3501|application|char|80|null|||What is the list for?
+3501|dev|long||null|||Row version number for mobile distribution purposes
+
+;new fc_list_elm fields
+3503|rank|long||null|||The position of this element in the level
+3503|state|long||null|||The state of the element. 0 = Default. 1 = Active. 2 = Inactive
+3503|fc_use|char|20|null|||Only used by the i18n list gui. Do not depend on this field having a value.
+3503|fc_use2|char|20|null|||Only used by the i18n list gui. Do not depend on this field having a value.
+3503|dev|long||null|||Row version number for mobile distribution purposes
+
+;new fc_list_locelm fields
+3504|title|char|20|null|||String for the locale element
+3504|locale|char|20|null|||Locale for the locale element
+3504|other|char|80|null|||Other string for the locale element
+3504|dev|long||null|||Row version number for mobile distribution purposes
+
+;new fc_locale fields
+3505|locale_name|char|20|null|||3505 field
+3505|abday|char|255|null|||3505 field
+3505|day|char|255|null|||3505 field
+3505|abmon|char|255|null|||3505 field
+3505|mon|char|255|null|||3505 field
+3505|d_t_fmt|char|255|null|||3505 field
+3505|d_fmt|char|255|null|||3505 field
+3505|t_fmt|char|255|null|||3505 field
+3505|am_pm|char|255|null|||3505 field
+3505|t_fmt_ampm|char|255|null|||3505 field
+3505|upper|char|255|null|||3505 field
+3505|lower|char|255|null|||3505 field
+3505|space|char|255|null|||3505 field
+3505|cntrl|char|255|null|||3505 field
+3505|punct|char|255|null|||3505 field
+3505|digit|char|255|null|||3505 field
+3505|xdigit|char|255|null|||3505 field
+3505|blank|char|255|null|||3505 field
+3505|toupper|char|255|null|||3505 field
+3505|tolower|char|255|null|||3505 field
+3505|yesexpr|char|255|null|||3505 field
+3505|noexpr|char|255|null|||3505 field
+3505|int_curr_symbol|char|20|null|||3505 field
+3505|currency_symbol|char|10|null|||3505 field
+3505|mon_decimal_point|char|10|null|||3505 field
+3505|mon_thousands_sep|char|10|null|||3505 field
+3505|mon_grouping|long||null|||3505 field
+3505|positive_sign|char|10|null|||3505 field
+3505|negative_sign|char|10|null|||3505 field
+3505|int_frac_digits|long||null|||3505 field
+3505|frac_digits|long||null|||3505 field
+3505|p_cs_precedes|long||null|||3505 field
+3505|p_sep_by_space|long||null|||3505 field
+3505|n_cs_precedes|long||null|||3505 field
+3505|n_sep_by_space|long||null|||3505 field
+3505|p_sign_posn|long||null|||3505 field
+3505|n_sign_posn|long||null|||3505 field
+3505|decimal_point|char|20|null|||3505 field
+3505|thousands_sep|char|20|null|||3505 field
+3505|grouping|long||null|||3505 field
+3505|dev|long||null|||Row version number for mobile distribution purposes
+
+;new mm_profile fields
+4260|profile_name|char|40|null|||Name of the profile
+4260|description|char|255|null|||Descr of the profile
+4260|root_obj|char|64|null|||Root object table name
+4260|dev|long||null|||Row version number for mobile distribution purposes
+
+;new mail mrege variable fields
+4261|var_name|char|40|null|||Name of the variable
+4261|var_path|char|255|null|||Path of the variable
+4261|rank|long||null|||Ordering of the variables
+4261|dev|long||null|||Row version number for mobile distribution purposes
+
+[new_table_relations]
+;table_num|rel_name|target_table_num|inv_rel_name|cardinality|exclusive|comment
+4260|profile2mm_var|4261|var2mm_profile|OTM||Variables for the profile
+
+[new_indexes]
+;table_num|index_name|is_unique|field_list
+
+[new_views]
+;view_num|view_name|unique_field|comment|obj_group
+
+[new_joins]
+;view_name|table1|relation1|alias1|table2|relation2|alias2|join flag|comment
+
+[new_view_fields]
+;view_name|field_name|from_table|from_field|comment
+
+[assign_users]
+sa
+
+[clear_hgbst]
+;list_name
+
+[add_hgbst]
+;list_name|elm_name|status
+
+[clear_gbst]
+;list_title|rel_name
+
+[add_gbst]
+;list_title|elm_title|status
+
+[imp_form_files]
+; Mail merge forms
+mail_merge\forms\1947.dat|1947|1.0|fc1.1
+mail_merge\forms\at2200.dat|2200|1.0|at1.0
+mail_merge\forms\mm4260.dat|4260|1.0|mm1.0
+
+[imp_data_files]
+mail_merge\files\msg_box_strings.dat
+mail_merge\files\path_edit_strings.dat
+mail_merge\files\mm_config.dat
+mail_merge\files\mm_strings.dat
+
+[save_user_forms]
+
+[compile_cb_code]
+mail_merge\code\mm_global.cbs G clarify mm_global
+mail_merge\code\mail_merge.cbs G clarify mail_merge
+mail_merge\code\at_2200_fd.cbs G clarify at_2200_fd
+mail_merge\code\lists.cbs G clarify i18n_lists
+mail_merge\code\string.cbs G clarify i18n_string
+
+mail_merge\code\1947.cbs F 1947 1.0 fc1.1
+mail_merge\code\at2200.cbs F 2200 1.0 at1.0
+mail_merge\code\mm4260.cbs F 4260 1.0 mm1.0

@@ -1,0 +1,175 @@
+/* DatHeaderV10: -DA -DT */
+/* Please do not remove DatHeader in the first line */
+/* -DA : Disable Auto ANSItoOEM Translation.(MSSQL only) */
+/* -DT : Locale Independent Date/Time Format */
+
+OBJECT  TYPE="mm_profile", NAME=mm_profile_268435457
+  UNIQUE_FIELD=profile_name
+  FIELDS
+   profile_name ="Case Vars";
+   description ="";
+   root_obj ="case";
+   dev=0;
+  END_FIELDS
+  RELATIONS
+  END_RELATIONS
+END_OBJECT  NAME=mm_profile_268435457
+
+! End of mm_profile objects (wrote 1)
+!
+OBJECT  TYPE="mm_var", NAME=mm_var_268435457
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="ID_Number";
+   var_path ="id_number";
+   rank=1;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435457
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435458
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="Site_Name";
+   var_path ="case_reporter2site:name";
+   rank=2;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435458
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435459
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="Address1";
+   var_path ="case_reporter2site:cust_primaddr2address:address";
+   rank=3;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435459
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435460
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="City";
+   var_path ="case_reporter2site:cust_primaddr2address:city";
+   rank=4;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435460
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435461
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="State";
+   var_path ="case_reporter2site:cust_primaddr2address:state";
+   rank=5;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435461
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435462
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="Zipcode";
+   var_path ="case_reporter2site:cust_primaddr2address:zipcode";
+   rank=6;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435462
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435463
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="First_Name";
+   var_path ="case_reporter2contact:first_name";
+   rank=7;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435463
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435464
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="Last_Name";
+   var_path ="case_reporter2contact:last_name";
+   rank=8;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435464
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435465
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="Phone";
+   var_path ="case_reporter2contact:phone";
+   rank=9;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435465
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435466
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="Act_code";
+   var_path ="case_act2act_entry:act_code";
+   rank=10;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435466
+
+OBJECT  TYPE="mm_var", NAME=mm_var_268435467
+  UNIQUE_FIELD=var_name
+  UNIQUE_RELATION=var2mm_profile
+  FIELDS
+   var_name ="Activity";
+   var_path ="case_act2act_entry:addnl_info";
+   rank=11;
+   dev=0;
+  END_FIELDS
+  RELATIONS
+   TO_NAME=mm_profile_268435457 REL=var2mm_profile;
+  END_RELATIONS
+END_OBJECT  NAME=mm_var_268435467
+
+! End of mm_var objects (wrote 11)
+!

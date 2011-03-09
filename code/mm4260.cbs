@@ -1,0 +1,730 @@
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Product        : Clarify Mail Merge(tm)
+'
+' Series         : First Choice Workflow Series(tm)
+'
+' Name           : mm4260.cbs
+'
+' Description    : Add/Modify a Profile
+'
+' Author         : First Choice Software, Inc.
+'                  8900 Business Park Drive
+'                  Austin, TX  78759
+'                  (512) 418-2905
+'                  EMAIL: support@fchoice.com
+'                  www.fchoice.com
+'
+' Platforms      : This version supports Clarify 4.0 and later
+'
+' Copyright (C)  2002 First Choice Software, Inc.
+' All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Functional Declarations
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Option Explicit
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Constants
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+                   ' Message constants
+Const GET_SEND_PATH  = cbFirstMessage + 3
+Const MSG_PATH       = cbFirstMessage + 3
+
+                   ' Message Box constants
+Const MB_FORM_OK     = 0
+Const MB_FORM_OK_CAN = 1
+Const MB_FORM_ABORT  = 2
+Const MB_FORM_YNC    = 3
+Const MB_FORM_YN     = 4
+Const MB_FORM_RETRY  = 5
+Const MB_FORM_SAVE   = 6
+Const MB_FORM_YNL    = 7
+
+Const MB_RET_OK      = 0
+Const MB_RET_CANCEL   = 1
+Const MB_RET_YES     = 2
+Const MB_RET_NO      = 3
+Const MB_RET_ABORT   = 4
+Const MB_RET_RETRY   = 5
+Const MB_RET_IGNORE  = 6
+Const MB_RET_SAVE    = 7
+Const MB_RET_DISCARD = 8
+Const MB_RET_LOOKUP  = 9
+
+                   ' Field/relation/object names
+                   ' Profile object
+Const OBJ_PROF      = "mm_profile"
+Const FLD_PROF_NAME = "profile_name"
+Const REL_PROF_VAR  = "profile2mm_var"
+
+                   ' Variable object
+Const OBJ_VAR       = "mm_var"
+Const FLD_VAR_NAME  = "var_name"
+Const FLD_VAR_PATH  = "var_path"
+Const FLD_VAR_RANK  = "rank"
+Const REL_VAR_PROF  = "var2mm_profile"
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Form Variables
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' UDT Structures
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+                                        ' Type for adp query
+Type str_type
+  the_str As String * 255
+End Type
+Global dummy_str As str_type
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Functional Prototype
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Declare Public Sub load_profiles()
+
+Declare Public Sub get_strings(start_val As Long, num_strings As Integer, _
+                   locale As String, application As String, ret_strings As List)
+Declare Function msg_box(the_text As String, the_caption As String, the_type As Integer) _
+                         As Integer
+Declare Public Function get_sprintf(str_num As Long, locale As String, application As String, _
+                     Optional arg1 As Variant, Optional arg2 As Variant, _
+                     Optional arg3 As Variant, Optional arg4 As Variant, _
+                     Optional arg5 As Variant, Optional arg6 As Variant) _
+                     As String
+
+Declare Function get_list_level(list_name As String, application As String, _
+                 locale As String, list_level As Integer, _
+                 list1 As List, list2 As List, list3 As List, _
+                 list4 As List, list5 As List, list6 As List, _
+                 list7 As List, list8 As List, lev1 As Integer, _
+                 lev2 As Integer, lev3 As Integer, lev4 As Integer, _
+                 lev5 As Integer, lev6 As Integer, lev7 As Integer, _
+                 lev8 As Integer) As Integer
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Global Variables
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Global locale As String                 ' Locale of user
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Set State of Up/Down Buttons
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub set_up_down()
+  Dim sel_item As Integer               ' Which is the selected item?
+
+                   ' Find out which item this is
+                   ' Turn on/off up/down buttons as appropriate
+  sel_item = CLB_VARS.ListIndex
+  BTN_UP.Enabled = (sel_item > 0)
+  BTN_DOWN.Enabled = (sel_item <> CLB_VARS.ListCount - 1)
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get Available Tables For a WildCard Name
+'
+' Copyright (C) 1999. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub get_table_names()
+  Dim query    As New SQLDB             ' Structure for SQL query
+  Dim sql_str  As String                ' SQL statement
+  Dim obj_list As New List              ' List of objects from query
+  Dim t_int    As Integer               ' Looping integer
+  Dim the_obj  As str_type              ' Each object returned
+  Dim new_list As New List              ' List of strings for DDL
+
+                   ' Set return list type
+  obj_list.ItemType = "str_type"
+  new_list.ItemType = "string"
+  
+                   ' Query for the tables/views in ADP
+                   ' Loop through them and build up list of records
+  sql_str = "select type_name from adp_tbl_name_map order by type_name"
+  query.Select sql_str, obj_list
+  For t_int = 0 To obj_list.Count - 1
+    obj_list.GetItemByIndex t_int, the_obj
+    new_list.AppendItem Trim$(the_obj.the_str)
+  Next t_int
+
+                   ' Fill into Cobj for use in the DDL
+  Cobj_LIST_OBJS.Fill new_list
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Load Profiles
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub load_profiles()
+  Dim t_ret  As New BulkRetrieve        ' Structure to query the DB
+  Dim t_list As List                    ' List returned from query
+  
+                   ' Get all of the profiles from the DB. Sort them
+  t_ret.SimpleQuery 0, OBJ_PROF
+  t_ret.AppendSort 0, FLD_PROF_NAME, cbAscending
+  t_ret.RetrieveRecords
+  
+                   ' Put into the grid
+  Set t_list = t_ret.GetRecordList(0)
+  Cobj_LOR_PROFILE.Fill t_list
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Form Load Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub Form_Load()
+  Dim ret_strings As New List           ' Strings to place on controls
+
+                   ' Do default action
+  Me.DoDefault
+
+                   ' Get strings for controls, place them
+  get_strings 16300, 13, locale, "", ret_strings
+  Me.Caption = ret_strings.ItemByIndex(0)
+  LBL_GRID.Caption = ret_strings.ItemByIndex(1)
+  LBL_PROFILE.Caption = ret_strings.ItemByIndex(2)
+  LBL_DESC.Caption = ret_strings.ItemByIndex(3)
+  LBL_VAR_NAME.Caption = ret_strings.ItemByIndex(4)
+  BTN_PATH.Caption = ret_strings.ItemByIndex(5)
+  BTN_PADD.Caption = ret_strings.ItemByIndex(6)
+  BTN_PREP.Caption = ret_strings.ItemByIndex(7)
+  BTN_PDEL.Caption = ret_strings.ItemByIndex(8)
+  BTN_VADD.Caption = ret_strings.ItemByIndex(6)
+  BTN_VREP.Caption = ret_strings.ItemByIndex(7)
+  BTN_VDEL.Caption = ret_strings.ItemByIndex(8)
+  BTN_CLEAR.Caption = ret_strings.ItemByIndex(9)
+  Ctl_Close.Caption = ret_strings.ItemByIndex(10)
+  BTN_UP.Caption = ret_strings.ItemByIndex(11)
+  BTN_DOWN.Caption = ret_strings.ItemByIndex(12)
+  
+                   ' Load profiles into grid
+                   ' Get the table names for DDL
+                   ' Initialize state of all of the controls
+  load_profiles
+  get_table_names
+  BTN_CLEAR.Value = True
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Done Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub Close_Click()
+                   ' Close the form (and any children)
+  Me.Close cbCloseChildren
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Message Handler
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub Message(ByVal num As Long, ByVal info As String)
+                   ' If they close the form, close it (and children)
+                   ' If we get a path back from path editor, put in text box
+                   ' Else, do default action
+  Select Case num
+    Case cbCloseMessage
+      Me.Close cbCloseChildren
+    Case MSG_PATH
+      TXT_PATH.Text = info
+    Case Else
+      Me.DoDefault
+  End Select
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get Variables for an Object
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub get_vars(sel_rec As Record)
+  Dim t_ret  As New BulkRetrieve        ' Structure to query the DB
+  Dim t_list As List                    ' List returned from query
+
+                   ' Get all of the variables for the current profile
+                   ' Sort by rank
+  t_ret.SetRoot sel_rec
+  t_ret.TraverseFromRoot 0, REL_PROF_VAR
+  t_ret.AppendSort 0, "rank", cbAscending
+  t_ret.RetrieveRecords
+  
+                   ' Get them, and put in grid
+  Set t_list = t_ret.GetRecordList(0)
+  Cobj_LOR_VARS.Fill t_list
+  
+                   ' Unselect the variable grid select row
+                   ' Clear out variable text boxes, and turn
+                   '  off proper buttons
+  CLB_VARS.UnSelect
+  TXT_NAME.Text = ""
+  TXT_PATH.Text = ""
+  Me.DisableControls "BTN_VREP", "BTN_VDEL", "BTN_UP", "BTN_DOWN"
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Profile Grid Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub CLB_PROFILE_Click()
+  Dim sel_rec As Record                 ' Selected record from the grid
+  Dim ret_int As Integer                ' Return from message box
+  
+                   ' Get the selected record, and put a copy (so we
+                   '  don't change data showing in grid) in variable
+                   '  for editing
+  Set sel_rec = CLB_PROFILE.Selected
+  Cobj_REC_MM.Fill sel_rec.Copy
+  
+                   ' Get the variables for this profile
+                   ' Turn on proper buttons
+  get_vars sel_rec
+  Me.EnableControls "BTN_PREP", "BTN_PDEL", "BTN_VADD", "BTN_PATH"
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Variable Grid Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub CLB_VARS_Click()
+  Dim sel_rec  As Record                ' Selected record from the grid
+  
+                   ' Get selected variable
+                   ' Put data for it in text boxes
+  Set sel_rec = CLB_VARS.Selected
+  TXT_NAME.Text = sel_rec.GetField("var_name")
+  TXT_PATH.Text = sel_rec.GetField("var_path")
+
+                   ' Turn on proper buttons
+                   ' Turn on up/down buttons as needed
+  Me.EnableControls "BTN_VREP", "BTN_VDEL"
+  set_up_down  
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Path Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sub BTN_PATH_Click()
+  Dim path_form As New Form             ' New form to display
+  Dim sel_rec As Record                 ' Selected record from the grid
+
+                   ' Get record for current object (not one displayed!!)
+                   ' Display the form
+                   ' Set the caption
+                   ' Call on form with no path or with
+                   '  existing path (if one present)
+  Set sel_rec = CLB_PROFILE.Selected
+  path_form.Show 2200, cbFrontIfUp
+  path_form.SetParent Me
+  path_form.Notify cbFirstMessage + 1, ""
+  path_form.Notify cbFirstMessage + 2, BTN_PATH.Caption
+  If Trim$(TXT_PATH.Text) = "" Then
+     path_form.Notify GET_SEND_PATH, sel_rec.GetField("root_obj")
+  Else
+     path_form.Notify cbFirstMessage + 4, sel_rec.GetField("root_obj")
+     path_form.Notify cbFirstMessage + 5, TXT_PATH.Text
+  End If
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Clear Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_CLEAR_Click()
+  Dim emp_rec As New Record             ' Empty record to clear fields
+
+                   ' Don't have an active profile
+                   ' Remove all rows from variable grid  
+  CLB_PROFILE.UnSelect
+  CLB_VARS.Clear
+  
+                   ' Clear out all text boxes, reset DDL to first row
+  emp_rec.RecordType = OBJ_PROF
+  Cobj_REC_MM.Fill emp_rec
+  TXT_NAME.Text = ""
+  TXT_PATH.Text = ""
+  
+                   ' Turn off proper buttons
+  Me.DisableControls "BTN_PREP", "BTN_PDEL", "BTN_VADD", "BTN_VREP", "BTN_VDEL", _
+                     "BTN_PATH", "BTN_UP", "BTN_DOWN"
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Profile Add Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_PADD_Click()
+  Dim t_save  As New BulkSave           ' Structure to write data to DB
+  Dim t_ret   As New BulkRetrieve       ' Structure to query data from DB
+  Dim t_list  As List                   ' List returned from query
+  Dim ret_int As Integer                ' Return from message box
+  
+                   ' If no profile name, error/exit
+  If TXT_PROFILE.Text = "" Then
+     ret_int = msg_box(get_sprintf(16350, Locale, ""), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+     TXT_PROFILE.SetFocus
+     Exit Sub
+  End If
+  
+                   ' Get profiles to see if this name is already used
+  t_ret.SimpleQuery 0, "mm_profile"
+  t_ret.AppendFilter 0, "profile_name", cbEqual, TXT_PROFILE.Text
+  t_ret.RetrieveRecords
+  
+                   ' If profile name already used, error/exit
+  Set t_list = t_ret.GetRecordList(0)
+  If t_list.Count > 0 Then
+     ret_int = msg_box(get_sprintf(16351, Locale, "", TXT_PROFILE.Text), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+     TXT_PROFILE.SetFocus
+     Exit Sub
+  End If
+
+                   ' Add profile and commit
+  t_save.InsertRecord Cobj_REC_MM.Contents
+  t_save.Save
+  
+                   ' Reload profiles and reset GUI state
+  load_profiles
+  BTN_CLEAR.Value = True
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Profile Delete Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_PDEL_Click()
+  Dim ret_int As Integer                ' Return from message box
+  Dim t_save  As New BulkSave           ' Structure to write data to DB
+  Dim t_ret   As New BulkRetrieve       ' Structure to query data from DB
+  Dim t_list  As List                   ' List returned from query
+  Dim sel_rec As Record                 ' Selected profile record
+  Dim t_int   As Integer                ' Looping integer
+  
+                   ' Ask if they're sure. If not, leave
+  ret_int = msg_box(get_sprintf(16352, Locale, "", TXT_PROFILE.Text), get_sprintf(16300, Locale, ""), MB_FORM_YN)
+  If ret_int = MB_RET_NO Then
+     Exit Sub
+  End If
+  
+                   ' Get current profile, and delete it
+                   ' Get all of the related variables
+  Set sel_rec = Cobj_REC_MM.Contents
+  t_save.DeleteRecord sel_rec
+  t_ret.SetRoot sel_rec
+  t_ret.TraverseFromRoot 0, REL_PROF_VAR
+  t_ret.RetrieveRecords
+  
+                   ' Loop through all the related variables
+                   ' Delete each one
+                   ' Commit deletes
+  Set t_list = t_ret.GetRecordList(0)
+  For t_int = 0 To t_list.Count - 1
+    Set sel_rec = t_list.ItemByIndex(t_int)
+    t_save.DeleteRecord sel_rec
+  Next t_int
+  t_save.Save
+  
+                   ' Reload profiles, reset GUI state
+  load_profiles
+  BTN_CLEAR.Value = True
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Profile Replace Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_PREP_Click()
+  Dim t_save   As New BulkSave          ' Structure to write data to DB
+  Dim t_ret    As New BulkRetrieve      ' Structure to query data from DB
+  Dim t_list   As List                  ' List returned from query
+  Dim ret_int  As Integer               ' Return from message box
+  Dim db_rec   As Record                ' Record read from the DB
+  Dim sel_rec  As Record                ' Selected record from the selected grid row
+  
+                   ' If no profile name, error/exit
+  If TXT_PROFILE.Text = "" Then
+     ret_int = msg_box(get_sprintf(16350, Locale, ""), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+     TXT_PROFILE.SetFocus
+     Exit Sub
+  End If
+
+                   ' Get profiles to see if this name is already used
+  t_ret.SimpleQuery 0, "mm_profile"
+  t_ret.AppendFilter 0, "profile_name", cbEqual, TXT_PROFILE.Text
+  t_ret.RetrieveRecords
+  
+                   ' Get selected profile
+                   ' Get query results from DB. If any profile (other than the selected one)
+                   '  has the new modified name, error/exit
+  Set sel_rec = Cobj_REC_MM.Contents
+  Set t_list = t_ret.GetRecordList(0)
+  If t_list.Count > 0 Then
+     Set db_rec = t_list.ItemByIndex(0)
+     If db_rec.GetField("objid") <> sel_rec.GetField("objid") Then
+        ret_int = msg_box(get_sprintf(16351, Locale, "", TXT_PROFILE.Text), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+        Exit Sub
+     End If
+  End If
+  
+                   ' Update this profile and commit changes
+  t_save.UpdateRecord sel_rec
+  t_save.Save
+  
+                   ' Put it in grid, and refresh grid to see it
+  CLB_PROFILE.ReplaceItem sel_rec, CLB_PROFILE.ListIndex
+  CLB_PROFILE.Refresh
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Variable Add Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_VADD_Click()
+  Dim ret_int  As Integer               ' Return from message box
+  Dim var_list As List                  ' List of variable records
+  Dim t_save   As New BulkSave          ' Structure to write data to DB
+  Dim new_rec  As Record                ' Record to insert into DB
+  Dim pro_rec  As Record                ' Current profile object
+  
+                   ' If no variable name, error/exit
+  If TXT_NAME.Text = "" Then
+     ret_int = msg_box(get_sprintf(16353, Locale, ""), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+     TXT_NAME.SetFocus
+     Exit Sub
+  End If
+
+                   ' If no variable path, error/exit
+  If TXT_PATH.Text = "" Then
+     ret_int = msg_box(get_sprintf(16354, Locale, ""), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+     TXT_PATH.SetFocus
+     Exit Sub
+  End If
+  
+                   ' Get list of existing variables
+                   ' If this name is already used, error/exit
+  Set var_list = Cobj_LOR_VARS.Contents
+  If var_list.FindFirstIndex(TXT_NAME.Text, FLD_VAR_NAME) >= 0 Then
+     ret_int = msg_box(get_sprintf(16355, Locale, ""), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+     TXT_NAME.SetFocus
+     Exit Sub     
+  End If
+  
+                   ' Build new record, relate it, insert it, and refresh the GUI
+  Set pro_rec = Cobj_REC_MM.Contents
+  Set new_rec = New Record
+  new_rec.RecordType = OBJ_VAR
+  new_rec.SetField FLD_VAR_NAME, TXT_NAME.Text
+  new_rec.SetField FLD_VAR_PATH, TXT_PATH.Text
+  new_rec.SetField FLD_VAR_RANK, CLB_VARS.ListCount + 1
+  t_save.InsertRecord new_rec
+  t_save.RelateRecords new_rec, pro_rec, REL_VAR_PROF
+  t_save.Save
+  
+                   ' Get variables for this profile
+  get_vars pro_rec
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Variable Replace Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_VREP_Click()
+  Dim ret_int  As Integer               ' Return from message box
+  Dim var_list As List                  ' List of variable records
+  Dim t_save   As New BulkSave          ' Structure to write data to DB
+  Dim sel_rec  As Record                ' Record to update into DB
+  Dim found    As Integer               ' Record who has the same name (if any)
+  
+                   ' If no variable name, error/exit
+  If TXT_NAME.Text = "" Then
+     ret_int = msg_box(get_sprintf(16353, Locale, ""), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+     TXT_NAME.SetFocus
+     Exit Sub
+  End If
+
+                   ' If no variable path, error/exit
+  If TXT_PATH.Text = "" Then
+     ret_int = msg_box(get_sprintf(16354, Locale, ""), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+     TXT_PATH.SetFocus
+     Exit Sub
+  End If
+  
+                   ' Get list of existing variables
+                   ' If this name is already used (for another variable, this one's OK), error/exit
+  Set var_list = Cobj_LOR_VARS.Contents
+  found = var_list.FindFirstIndex(TXT_NAME.Text, FLD_VAR_NAME)
+  If found >= 0 Then
+     If found <> CLB_VARS.ListIndex Then
+        ret_int = msg_box(get_sprintf(16355, Locale, ""), get_sprintf(16300, Locale, ""), MB_FORM_OK)
+        TXT_NAME.SetFocus
+        Exit Sub     
+     End If
+  End If
+  
+                   ' Update this variable, and write to DB. Commit
+  Set sel_rec = CLB_VARS.Selected
+  sel_rec.SetField FLD_VAR_NAME, TXT_NAME.Text
+  sel_rec.SetField FLD_VAR_PATH, TXT_PATH.Text
+  t_save.UpdateRecord sel_rec
+  t_save.Save
+  
+                   ' Put it in grid, and refresh grid to see it
+  CLB_VARS.ReplaceItem sel_rec, CLB_VARS.ListIndex
+  CLB_VARS.Refresh
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Variable Delete Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_VDEL_Click()
+  Dim ret_int  As Integer               ' Return from message box
+  Dim t_save   As New BulkSave          ' Structure to write data to DB
+  Dim sel_rec  As Record                ' Selected profile record
+  Dim sel_int  As Integer               ' Selected record number
+  Dim var_list As List                  ' List of variables
+  Dim t_int    As Integer               ' Looping integer
+  Dim var_rec  As Record                ' Each variable record to update
+  
+                   ' Make sure they want to delete. If no, leave
+  ret_int = msg_box(get_sprintf(16356, Locale, "", TXT_PROFILE.Text), get_sprintf(16300, Locale, ""), MB_FORM_YN)
+  If ret_int = MB_RET_NO Then
+     Exit Sub
+  End If
+  
+                   ' Get the selected rec num, the record, and all recs from the grid
+  sel_int = CLB_VARS.ListIndex
+  Set sel_rec = CLB_VARS.Selected
+  Set var_list = Cobj_LOR_VARS.Contents
+  
+                   ' Delete the selected record
+                   ' For all records with higher ranks, subtract one, and update them
+  t_save.DeleteRecord sel_rec
+  For t_int = sel_int + 1 To var_list.Count - 1
+    Set var_rec = var_list.ItemByIndex(t_int)
+    var_rec.SetField FLD_VAR_RANK, var_rec.GetField(FLD_VAR_RANK) - 1
+    t_save.UpdateRecord var_rec
+  Next t_int
+  
+                   ' Commit changes, and refresh GUI
+  t_save.Save
+  get_vars Cobj_REC_MM.Contents
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Up Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub swap_records(delta As Integer)
+  Dim var_recs As List                  ' List of variable records
+  Dim sel_num  As Integer               ' Which record is this?
+  Dim t_save   As New BulkSave          ' Structure to write to DB
+  Dim var_rec  As Record                ' Each variable record
+    
+                   ' Get variable records
+                   ' Get which record number this is
+  Set var_recs = Cobj_LOR_VARS.Contents
+  sel_num = CLB_VARS.ListIndex
+
+                   ' Get this record. Change the rank by delta
+                   ' Change the record above's/below's rank by -delta
+                   ' Commit changes
+  Set var_rec = var_recs.ItemByIndex(sel_num)
+  var_rec.SetField FLD_VAR_RANK, var_rec.GetField(FLD_VAR_RANK) + delta
+  CLB_VARS.ReplaceItem var_rec, sel_num
+  t_save.UpdateRecord var_rec
+  
+                   ' Move other record, as needed
+                   ' Commit changes
+  Set var_rec = var_recs.ItemByIndex(sel_num + delta)
+  var_rec.SetField FLD_VAR_RANK, var_rec.GetField(FLD_VAR_RANK) - delta
+  CLB_VARS.ReplaceItem var_rec, sel_num + delta
+  t_save.UpdateRecord var_rec
+  t_save.Save
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Up Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_UP_Click()
+
+                   ' Move record up
+  swap_records -1
+  
+                   ' Move this record up in grid
+                   ' Turn on/off Up/Down buttons
+  CLB_VARS.Up
+  set_up_down
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Down Button Click Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub BTN_DOWN_Click()
+                   ' Move record down
+  swap_records 1
+
+                   ' Move this record down in grid
+                   ' Turn on/off Up/Down buttons
+  CLB_VARS.Down  
+  set_up_down
+End Sub

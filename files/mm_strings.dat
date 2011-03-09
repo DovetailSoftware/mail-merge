@@ -1,0 +1,222 @@
+/******************************************************************************/
+/* Strings For MM GUI                                                         */
+/*                                                                            */
+/* Copyright (C) 2002 First Choice Software, Inc.        All Rights Reserved  */
+/******************************************************************************/
+
+OBJECT TYPE = "fc_string", NAME="16300_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16300;
+   locale="EN_US";
+   application="";
+   string="Mail Merge Profile Administration";
+  END_FIELDS
+END_OBJECT NAME="16300_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16301_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16301;
+   locale="EN_US";
+   application="";
+   string="Profiles:";
+  END_FIELDS
+END_OBJECT NAME="16301_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16302_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16302;
+   locale="EN_US";
+   application="";
+   string="Profile Name/Object:";
+  END_FIELDS
+END_OBJECT NAME="16302_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16303_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16303;
+   locale="EN_US";
+   application="";
+   string="Description:";
+  END_FIELDS
+END_OBJECT NAME="16303_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16304_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16304;
+   locale="EN_US";
+   application="";
+   string="Variable Name:";
+  END_FIELDS
+END_OBJECT NAME="16304_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16305_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16305;
+   locale="EN_US";
+   application="";
+   string="Variable Path";
+  END_FIELDS
+END_OBJECT NAME="16305_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16306_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16306;
+   locale="EN_US";
+   application="";
+   string="Add";
+  END_FIELDS
+END_OBJECT NAME="16306_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16307_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16307;
+   locale="EN_US";
+   application="";
+   string="Replace";
+  END_FIELDS
+END_OBJECT NAME="16307_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16308_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16308;
+   locale="EN_US";
+   application="";
+   string="Delete";
+  END_FIELDS
+END_OBJECT NAME="16308_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16309_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16309;
+   locale="EN_US";
+   application="";
+   string="Clear";
+  END_FIELDS
+END_OBJECT NAME="16309_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16310_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16310;
+   locale="EN_US";
+   application="";
+   string="Done";
+  END_FIELDS
+END_OBJECT NAME="16310_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16311_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16311;
+   locale="EN_US";
+   application="";
+   string="Up";
+  END_FIELDS
+END_OBJECT NAME="16311_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16312_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16312;
+   locale="EN_US";
+   application="";
+   string="Down";
+  END_FIELDS
+END_OBJECT NAME="16312_EN_US"
+
+
+
+
+
+
+/* Form 4260 messages */
+
+OBJECT TYPE = "fc_string", NAME="16350_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16350;
+   locale="EN_US";
+   application="";
+   string="You must supply a profile name";
+  END_FIELDS
+END_OBJECT NAME="16350_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16351_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16351;
+   locale="EN_US";
+   application="";
+   string="The profile name '%1s' is already used. Please select another";
+  END_FIELDS
+END_OBJECT NAME="16351_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16352_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16352;
+   locale="EN_US";
+   application="";
+   string="Are you sure you want to delete this profile? If you do, it can not be used for any further mail merges";
+  END_FIELDS
+END_OBJECT NAME="16352_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16353_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16353;
+   locale="EN_US";
+   application="";
+   string="You must select a variable name";
+  END_FIELDS
+END_OBJECT NAME="16353_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16354_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16354;
+   locale="EN_US";
+   application="";
+   string="You must select a variable path";
+  END_FIELDS
+END_OBJECT NAME="16354_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16355_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16355;
+   locale="EN_US";
+   application="";
+   string="That variable name is already used for this profile. Please select another name";
+  END_FIELDS
+END_OBJECT NAME="16355_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16356_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16356;
+   locale="EN_US";
+   application="";
+   string="Are you sure you want to delete this variable? If you do, it can not be used for any further mail merges";
+  END_FIELDS
+END_OBJECT NAME="16356_EN_US"
+
+OBJECT TYPE = "fc_string", NAME="16357_EN_US"
+  UNIQUE_FIELD = id, locale, application
+  FIELDS
+   id=16357;
+   locale="EN_US";
+   application="";
+   string="This profile has changed. Do you want to save the changes?";
+  END_FIELDS
+END_OBJECT NAME="16357_EN_US"

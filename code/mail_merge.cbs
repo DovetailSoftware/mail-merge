@@ -1,0 +1,612 @@
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Product        : Clarify Mail Merge(tm)
+'
+' Series         : First Choice Workflow Series(tm)
+'
+' Name           : mail_merge.cbs
+'
+' Description    : Perform a Mail Merge
+'
+' Author         : First Choice Software, Inc.
+'                  8900 Business Park Drive
+'                  Austin, TX  78759
+'                  (512) 418-2905
+'                  EMAIL: support@fchoice.com
+'                  www.fchoice.com
+'
+' Platforms      : This version supports Clarify 4.0 and later
+'
+' Copyright (C)  2002 First Choice Software, Inc.
+' All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Functional Declarations
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Option Explicit
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Global Variables
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Global gmm_t_ret       As BulkRetrieve  ' Structure to query the DB
+Global gmm_t_ret2      As BulkRetrieve  ' Structure to query the DB
+
+Global gmm_word_app    As Object        ' Word application for mail merging
+
+Global gmm_name_list   As List          ' List of variable names
+Global gmm_val_list    As List          ' List of variable values
+
+Global gmm_date_format As String        ' Date format to use for merging
+Global gmm_VarValue    As String        ' A variable's value
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Constants
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+                   ' Value to be inserted each time there is a merge variable in
+                   '  the document that is not found in the profile. You may change
+                   '  this to any string you'd like
+Const VALUE_NOT_FOUND = "NOT FOUND!!!"
+
+                   ' Variable for the current date/time (for merge document). Can be
+                   '  changed to any value you'd like
+Const DATE_VARIABLE = "NOW"
+
+                   ' Character that says "Format as a date"
+Const DATE_START    = "#"
+
+                   ' Maximum number of columns in a table that will have an OTM row in it
+                   '  This can be increased, if necessary
+Const MAX_TBL_REPLACE = 100
+
+                   ' String constants
+Const COLON      = ":"
+Const VAL_SEP    = "|"
+Const PIPE       = "|"
+Const PERIOD     = "."
+Const UNDERSCORE = "_"
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get Value For a Variable (Helper routine)
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub get_var_value1(var_path As String, root_list As List, var_name As String)
+  Dim num_parts As Integer              ' Number of parts in the path string
+  Dim t_int     As Integer              ' Looping integer
+  Dim root_rec  As Record               ' Root record
+  Dim t_list    As List                 ' List from DB query
+
+                   ' Get number of parts in the path
+                   ' If only one part (field name)
+                   '  Loop through all the roots (there could be multiple)
+                   '   Get each. For each, add to list. If not the first, put a pipe separator
+  num_parts = ItemCount(var_path, COLON)
+  If num_parts = 1 Then
+     For t_int = 0 To root_list.Count - 1
+         Set root_rec = root_list.ItemByIndex(t_int)   
+         If gmm_VarValue <> "" Then
+            gmm_VarValue = gmm_VarValue & PIPE
+         End If
+         gmm_VarValue = gmm_VarValue & root_rec.GetField(var_path)
+     Next t_int
+  Else
+  	           ' If multiple parts, loop through the root record(s)
+  	           '  For each, traverse the relation
+     For t_int = 0 To root_list.Count - 1
+         Set root_rec = root_list.ItemByIndex(t_int)
+         gmm_t_ret.Clear
+         gmm_t_ret.SetRoot root_rec
+         gmm_t_ret.TraverseFromRoot 0, Item$(var_path, 1, 1, COLON)
+         gmm_t_ret.RetrieveRecords
+
+                   ' Get the data from the traversal, and call to get data recursively
+         Set t_list = gmm_t_ret.GetRecordList(0)
+         get_var_value1 Item$(var_path, 2, num_parts, COLON), t_list, var_name
+     Next t_int  
+  End If
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Get Value For a Variable
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub get_var_value(var_path As String, ByVal root_rec As Record, var_name As String)
+  Dim new_list As New List
+  
+                   ' Assume no value found yet
+                   ' Set up list to be records
+                   ' Put root record in the list
+                   ' Get the value given the root record, the variable name, and the path
+  gmm_VarValue = ""
+  new_list.ItemType = "record"
+  new_list.AppendItem root_rec
+  get_var_value1 var_path, new_list, var_name
+
+                   ' If we found the value, put variable and value in their lists
+  If gmm_VarValue <> "" Then
+     gmm_name_list.AppendItem var_name
+     gmm_val_list.AppendItem gmm_VarValue
+  End If
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Replace a Found Variable In The Document
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Function replace_string_perhaps(the_val As String) As String
+  Dim t_int       As Integer            ' Looping integer
+  Dim format_date As Boolean            ' Format this field as a date/time
+   
+                   ' Take the variable header/footer off the variable name
+                   ' If there's a pipe on either end, take it off
+                   ' If there's a date formatter on the start, take it off (and remember)
+  the_val = UCase$(Mid$(the_val, 2, Len(the_val) - 2))
+  If Left$(the_val, 1) = PIPE Then
+     the_val = Right$(the_val, Len(the_val) - 1)
+  End If
+  If Right$(the_val, 1) = PIPE Then
+     the_val = Left$(the_val, Len(the_val) - 1)  	
+  End If
+  If Left$(the_val, 1) = DATE_START Then
+     the_val = Right$(the_val, Len(the_val) - 1)
+     format_date = True
+  Else
+     format_date = False
+  End If
+
+                   ' If this is a special variable for the current date/time,
+                   '  return it (with proper formatting)
+  If the_val = DATE_VARIABLE Then
+     If format_date Then
+        replace_string_perhaps = Format$(App.CurrentDate, gmm_date_format)
+     Else
+     	replace_string_perhaps = App.CurrentDate
+     End If
+     Exit Function
+  End If
+
+                   ' Loop through the list of variable names
+                   ' If we find it, then return the associated value and leave
+                   '  (Format as a date if they asked to)
+  For t_int = 0 To gmm_name_list.Count - 1
+    If the_val = gmm_name_list.ItemByIndex(t_int) Then
+       If format_date Then
+       	  replace_string_perhaps = Format$(gmm_val_list.ItemByIndex(t_int), gmm_date_format)
+       Else
+          replace_string_perhaps = gmm_val_list.ItemByIndex(t_int)
+       End If
+       Exit Function
+    End If
+  Next t_int
+
+                   ' Didn't find the variable. Return the "NOT FOUND" value  
+  replace_string_perhaps = VALUE_NOT_FOUND
+End Function
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Merge Profile Data
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub merge_profile_data()
+  Dim obj_range As Object               ' Object for range in document
+  Dim the_start As Long                 ' Start of range
+  Dim the_end   As Long                 ' End of range
+  Dim t_int     As Integer              ' Looping integer
+  Dim t_int2    As Integer              ' Looping integer
+  Dim ret_str   As String               ' Return string from function call
+  Dim the_table As Object               ' Each table to process
+ 
+  Dim a_row          As Object          ' Each table row
+  Dim a_cell         As Object          ' Each table cell
+  Dim t_int3         As Integer         ' Looping integer
+  Dim t_int4         As Integer         ' Looping integer
+  Dim cell_text      As String          ' Text of each table cell
+  Dim first_tbl_item As String          ' First variable in a table row to be replaced
+  Dim do_replace     As Boolean         ' Do we replace this table row
+  Dim new_row        As Object          ' New row that we're adding
+  Dim num_rows       As Integer         ' Number of rows to add
+
+  Dim tbl_replace(MAX_TBL_REPLACE) As String   ' Array of data to replace in rows we're adding
+
+                   ' Loop through all the tables in the document
+                   '  Get the next table
+                   '  Get the number of rows in the table
+                   '  Start with the first row
+                   '  While there are more rows to do...
+                   '   Assume this is not a replacement (OTM) row
+                   '   Clear out the replacement array
+  For t_int = 1 To gmm_word_app.ActiveDocument.Tables.Count
+    Set the_table = gmm_word_app.ActiveDocument.Tables(t_int)
+    num_rows = the_table.Rows().Count
+    t_int2 = 1
+    While t_int2 <= num_rows
+      do_replace = False
+      For t_int3 = 1 To MAX_TBL_REPLACE
+        tbl_replace(t_int3) = ""
+      Next t_int3
+
+                   '   Get this row
+                   '   Copy this row to the clipboard
+                   '   For each cell (column)...
+                   '    Get the cell
+                   '    Get the cell text
+                   '    If ends in a bell (Asc(7)), strip it (don't know why they're there!)
+                   '    If ends in a CR, remove it, and strip the rest of the white space
+      Set a_row = the_table.rows(t_int2)
+      a_row.range.copy
+      For t_int3 = 1 To a_row.cells().count
+        Set a_cell = a_row.Cells(t_int3)
+        cell_text = Trim$(a_cell.range.text)
+        If Right$(cell_text, 1) = Chr$(7) Then
+           cell_text = Left$(cell_text, Len(cell_text) - 1)
+        End If
+        If Right$(cell_text, 1) = Chr$(13) Then
+           cell_text = Left$(cell_text, Len(cell_text) - 1)
+        End If
+        cell_text = Trim$(cell_text)
+        
+                   '    If the cell starts with a pipe (variable)
+                   '    Put the data for the variable in the replacement array
+                   '    If this is the first variable found in this row...
+                   '     Set the first flag to false
+                   '     Remember this variable's data as the first (for the number of rows to add)
+                   '    Else, put this data into proper item of array
+        If Left$(cell_text, 1) = PIPE Then
+           tbl_replace(t_int3) = Trim$(replace_string_perhaps(Item$(cell_text, 1, 2, PIPE) & PIPE))
+           If do_replace = False Then
+              do_replace = True
+              first_tbl_item = tbl_replace(t_int3)
+           End If
+        Else
+           tbl_replace(t_int3) = Trim$(cell_text)
+        End If
+      Next t_int3
+      
+                   ' If we're to replace this row...
+                   '  Loop through the number of rows to add. For each,
+                   '   Paste a copy of the row
+                   '   Get a handle to the row
+                   '   Increment current row and total number of rows
+                   '   Loop through the cells. For each, if it is a variable, replace
+                   '    it with the proper item from list in the array
+                   '   Else, just update it (in case it has a formula in it)
+      If do_replace Then
+      	 For t_int3 = 1 To ItemCount(first_tbl_item, PIPE)
+             a_row.range.Paste
+             Set new_row = the_table.Rows(t_int2)
+             num_rows = num_rows + 1
+             t_int2 = t_int2 + 1
+             For t_int4 = 1 To new_row.cells().count
+               cell_text = tbl_replace(t_int4)
+               If ItemCount(cell_text, PIPE) > 1 Then
+               	  new_row.Cells(t_int4).Range.Text = Item$(cell_text, t_int3, t_int3, PIPE)
+               Else
+               	  new_row.Cells(t_int4).Range.Fields.Update
+               End If
+             Next t_int4
+      	 Next t_int3
+      	 
+      	           ' Now we're done with this row (and added all of the others)
+      	           ' Don't replace any more for this row
+      	           ' Delete the original row, and subtract 1 from cur row and number of rows
+         do_replace = False
+         a_row.Delete
+         t_int2 = t_int2 - 1
+         num_rows = num_rows - 1
+      Else
+      	           ' Else this isn't a mail merge row. For each cell, update the formula
+      	 For t_int3 = 1 To a_row.Cells().Count
+      	   a_row.Cells(t_int3).range.fields.update
+      	 Next t_int3
+      End If
+      
+                   ' Go to the next row
+      t_int2 = t_int2 + 1
+    Wend
+  Next t_int
+
+                   ' For each range in all of the documents ranges...
+                   '  Get start and end of range
+                   '  Do until there are no more to do in this range
+                   '   Find the next variable
+                   '   If we found one, replace range's text with the variable's data value
+                   '   Reset start/end of range for next search    
+  For each obj_range in gmm_word_app.ActiveDocument.StoryRanges
+    the_start = obj_range.Start
+    the_end = obj_range.End
+    Do
+      obj_range.Find.ClearFormatting
+      obj_range.Find.Text = "\{*\}"
+      obj_range.Find.Forward = True
+      obj_range.Find.MatchWildcards = True
+      obj_range.Find.Execute
+      If obj_range.Find.Found Then
+        obj_range.Text = replace_string_perhaps(obj_range.Text)
+        obj_range.Start = the_start
+        obj_range.End = the_end
+      End If
+    Loop While obj_range.Find.Found
+  Next obj_range
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Mail Merge Method
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Function mail_merge(doc_template As String, output_doc As String, _
+                           profile_name As String, root_objid As Long, _
+                           attach_doc As Boolean, attach_name As String, _
+                           use_autonumber As Boolean, show_it As Boolean) As Integer
+  Dim t_list    As List                 ' List from DB query
+  Dim var_list  As List                 ' List of variables
+  Dim prof_rec  As Record               ' Profile record
+  Dim var_rec   As Record               ' Profile variable record
+  Dim t_int     As Integer              ' Looping integer
+  Dim root_rec  As Record               ' Root record that we're merging from
+  Dim t_rec     As Record               ' Record from DB query
+  Dim t_name    As String               ' Variable to hold variable name for parsing
+  Dim t_save    As New BulkSave         ' Structure to write to the database
+  Dim doc_path  As Record               ' Doc path record
+  Dim doc_inst  As Record               ' Doc inst record
+  Dim rel_name  As String               ' Relation from doc_inst to the record
+  
+                   ' If no word document to merge, errror/exit
+  If Not(FileExists(doc_template)) Then
+     mail_merge = -1
+     Exit Function
+  End If
+
+                   ' Create bulk retrieves
+                   ' Query to get the profile, the related variables, and
+                   '  the configuration item for date format (if needed)
+  Set gmm_t_ret = New BulkRetrieve
+  Set gmm_t_ret2 = New BulkRetrieve
+  gmm_t_ret2.SimpleQuery 0, "mm_profile"
+  gmm_t_ret2.AppendFilter 0, "profile_name", cbEqual, profile_name
+  gmm_t_ret2.TraverseFromParent 1, "profile2mm_var", 0
+  gmm_t_ret2.AppendSort 1, "rank", cbAscending
+  If gmm_date_format = "" Then
+     gmm_t_ret2.SimpleQuery 2, "config_itm"
+     gmm_t_ret2.AppendFilter 2, "name", cbEqual, "MM Date Format"
+  End If
+  gmm_t_ret2.RetrieveRecords
+  
+                   ' Get the profile
+                   ' If no profile found, error/exit
+                   ' Get the record
+  Set t_list = gmm_t_ret2.GetRecordList(0)
+  If t_list.Count = 0 Then
+     mail_merge = -2
+     Exit Function
+  End If
+  Set prof_rec = t_list.ItemByIndex(0)
+  
+                   ' If we need the date format...
+                   '  Get the list
+                   '  If not found, use "General Date" format
+                   '  Else, use the format found
+  If gmm_date_format = "" Then
+     Set t_list = gmm_t_ret2.GetRecordList(2)
+     If t_list.Count = 0 Then
+        gmm_date_format = "General Date"
+     Else
+        Set t_rec = t_list.ItemByIndex(0)
+        gmm_date_format = t_rec.GetField("str_value")
+     End If
+  End If
+
+                   ' Get the root record from the profile record and the objid argument
+                   '  If not found, error/exit
+                   ' Else, get the root record
+  gmm_t_ret.SimpleQuery 0, prof_rec.GetField("root_obj")
+  gmm_t_ret.AppendFilter 0, "objid", cbEqual, root_objid
+  gmm_t_ret.RetrieveRecords
+  Set t_list = gmm_t_ret.GetRecordList(0)
+  If t_list.Count = 0 Then
+     mail_merge = -3
+     Exit Function
+  End If
+  Set root_rec = t_list.ItemByIndex(0)
+  
+                   ' Create list for variable names and values
+  Set gmm_name_list = New List
+  Set gmm_val_list = New List
+  gmm_name_list.ItemType = "string"
+  gmm_val_list.ItemType = "string"
+  
+                   ' Get list of variables
+                   '  Loop through them. For each...
+  Set var_list = gmm_t_ret2.GetRecordList(1)
+  For t_int = 0 To var_list.Count - 1
+    Set var_rec = var_list.ItemByIndex(t_int)
+
+                   ' Get the variable name
+                   ' Get the value for the variable, given the root record
+    t_name = UCase$(var_rec.GetField("var_name"))    
+    get_var_value var_rec.GetField("var_path"), root_rec, t_name
+  Next t_int
+
+                   ' Set error trap to skip by the one statement
+                   ' Open existing word application
+                   ' Clear error trap
+                   ' If object not open, open up word (with error trap)
+  On Error Resume Next
+  Set gmm_word_app = GetObject(,"Word.Application")
+  On Error GoTo 0
+  If gmm_word_app Is Nothing Then
+     On Error GoTo cannot_create
+     Set gmm_word_app = CreateObject("Word.Application")
+     On Error GoTo 0
+  End If
+
+                   ' Set error trap
+                   ' Show the application on the screen, based on argument
+                   ' Clear the trap
+  On Error GoTo cannot_set_up
+  If show_it Then
+     gmm_word_app.Visible = True
+  End If
+
+                   ' If they're autonumbering, add the auto-number to the output file name
+  If use_autonumber Then
+     output_doc = FileParse$(output_doc, 2) & Basic.PathSeparator$ & FileParse$(output_doc, 4) & _
+                  UNDERSCORE & Trim$(Str$(App.GenerateID("Attach"))) & PERIOD & _
+                  FileParse$(output_doc, 5)
+  End If
+  
+                   ' Open the word document
+                   ' Save a new copy with the output name
+                   ' Turn off auto-spell check
+                   ' Turn off auto-grammar check
+                   ' Clear the error grap
+  gmm_word_app.Documents.Open filename:=doc_template
+  gmm_word_app.ActiveDocument.SaveAs filename:=output_doc 
+'  gmm_word_app.ScreenUpdating = False ' If TRUE, can't replace text
+  gmm_word_app.Options.CheckSpellingAsYouType = False
+  gmm_word_app.Options.CheckGrammarAsYouType = False
+  On Error GoTo 0
+
+                   ' Merge the profile data in the program
+  merge_profile_data
+
+                   ' Save the word document
+                   ' If not showing it, close up word
+  gmm_word_app.ActiveDocument.Save
+  If show_it = False Then
+     gmm_word_app.Quit
+  End If
+  
+                   ' Now we have to see if we should attach anything...
+                   ' If so, create doc_path and doc_inst records. Set the one
+                   '  field for each one
+                   ' For the doc_inst.title, if they give us one, use it. Otherwise
+                   '  just use the file name (not path)
+                   ' Relate the records to each other
+  If attach_doc Then
+     Set doc_path = New Record
+     doc_path.RecordType = "doc_path"
+     doc_path.SetField "path", output_doc
+     t_save.InsertRecord doc_path
+     
+     Set doc_inst = New Record
+     doc_inst.RecordType = "doc_inst"
+     If attach_name = "" Then
+        doc_inst.SetField "title", FileParse$(output_doc, 3)
+     Else
+     	doc_inst.SetField "title", attach_name
+     End If
+     t_save.InsertRecord doc_inst
+     t_save.RelateRecords doc_inst, doc_path, "attach_info2doc_path"
+     
+                   ' Relate to proper root object, based on the root object's type!
+                   ' Commit the records to the DB
+     Select Case UCase(root_rec.RecordType)
+      Case "BUG"
+        rel_name = "doc_inst2bug"
+      Case "BUS_ORG"
+        rel_name = "doc_inst2bus_org"
+      Case "CAMPAIGN"
+        rel_name = "doc_inst2campaign"
+      Case "CASE"
+        rel_name = "doc_inst2case"
+      Case "COMMUNICATION"
+        rel_name = "doc_inst2communication"
+      Case "CONTACT"
+        rel_name = "doc_inst2contact"
+      Case "CONTRACT"
+        rel_name = "doc_inst2contract"
+      Case "DEMAND_HDR"
+        rel_name = "doc_inst2demand_hdr"
+      Case "DIAG_HINT"
+        rel_name = "doc_info2diag_hint"
+      Case "ECO_DTL"
+        rel_name = "doc_inst2eco_dtl"
+      Case "ECO_HDR"
+        rel_name = "doc_inst2eco_hdr"
+      Case "EMAIL_LOG"
+        rel_name = "doc_inst2email_log"
+      Case "INTERACT"
+        rel_name = "doc_inst2interact"
+      Case "LEAD"
+        rel_name = "doc_inst2lead"
+      Case "LIT_REQ"
+        rel_name = "doc_inst2lit_req"
+      Case "LIT_SHIP_REQ"
+        rel_name = "doc_inst2lit_ship_req"
+      Case "MOD_LEVEL"
+        rel_name = "doc_inst2mod_level"
+      Case "OPPORTUNITY"
+        rel_name = "doc_inst2opportunity"
+      Case "SITE"
+        rel_name = "doc_inst2site"
+      Case "SITE_PART"
+        rel_name = "doc_inst2site_part"
+      Case "SUBCASE"
+        rel_name = "doc_inst2subcase"
+      Case "TEMPLATE"
+        rel_name = "doc_inst2template"
+      Case "WORKAROUND"
+        rel_name = "attachment2workaround"
+     End Select
+     t_save.RelateRecords doc_inst, root_rec, rel_name
+     t_save.Save
+  End If
+  
+                   ' Free up the word application
+                   ' Return a success error code, and leave
+  Set gmm_word_app = Nothing
+  mail_merge = 0
+  Exit Function
+  
+                   ' Cannot create a session, return error code
+cannot_create:
+  Err = 0
+  On Error GoTo 0
+'  Debug.Print "Cannot create a Microsoft Word session. Please contact your system administrator."
+  mail_merge = -4
+  Exit Function
+  
+                   ' Can't set up session properly. Return error code
+cannot_set_up:
+  Err = 0
+  On Error GoTo 0
+'  Debug.Print "Cannot set up your Microsoft Windows session properly. Please contact your system administrator."
+  mail_merge = -5
+  Exit Function
+End Function
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Test Driver
+'
+' Copyright (C) 2002. First Choice Software. All Rights Reserved.
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Public Sub test_mm()
+  Dim ret_int As Integer
+
+  ret_int = mail_merge("c:\users\first\product\mail_merge\api\docs\quote_template.doc", "c:\users\first\product\mail_merge\api\fred.doc", _
+                       "Case Vars", 268435457, True, "My attachment!!", True, True)
+  If ret_int = 0 Then
+     Debug.Print "Success"
+  Else
+     Debug.Print "Failure. Return code = " & Trim$(Str$(ret_int))
+  End If
+End Sub

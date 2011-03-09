@@ -1,0 +1,16 @@
+mm_global.cbs G clarify mm_global
+mail_merge.cbs G clarify mail_merge
+string.cbs G clarify string
+lists.cbs G clarify lists
+
+                                        ' The following line should be uncommented
+                                        '  if you are compiling QA in 2-tier mode
+at_2200_fd.cbs -G clarify at_2200_fd
+                                        ' The following line should be uncommented
+                                        '  if you are compiling QA in 3-tier mode
+'at_2200_fd.cbs -G clarify appsvr -N at_2200_fd
+
+
+1947.cbs F 1947 1.0 fc1.1
+at2200.cbs -F 2200 1.0 at1.0
+mm4260.cbs F 4260 1.0 mm1.0
