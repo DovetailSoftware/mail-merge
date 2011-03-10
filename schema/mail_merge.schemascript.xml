@@ -1,0 +1,62 @@
+<schemaScript xmlns="http://www.dovetailsoftware.com/2006/10/SchemaScript.xsd">
+  <addTable name="mm_profile" id="4260">
+    <description>Profile of mail merge variables</description>
+    <groupName>Mail Merge</groupName>
+  </addTable>
+
+  <addColumn name="objid" dataType="Integer" table="mm_profile" >
+    <description>Internal record number</description>
+    <clarifyGenericFieldID>3</clarifyGenericFieldID>
+  </addColumn>
+  <addColumn name="dev" dataType="Integer" table="mm_profile" >
+    <isNullable>true</isNullable>
+    <description>Row version number for mobile distribution purposes</description>
+    <clarifyGenericFieldID>151</clarifyGenericFieldID>
+  </addColumn>
+  
+  <addColumn name="profile_name" dataType="String" table="mm_profile" >
+    <length>40</length>
+    <description>Name of the profile</description>
+  </addColumn>
+  <addColumn name="description" dataType="String" table="mm_profile" >
+    <length>255</length>
+    <description>Name of the profile</description>
+  </addColumn>
+  <addColumn name="root_objid" dataType="String" table="mm_profile" >
+    <length>64</length>
+    <description>Base object of the profile</description>
+  </addColumn>
+  
+  
+  <addTable name="mm_var" id="4261">
+    <description>A variable for a MM profile</description>
+    <groupName>Mail Merge</groupName>
+  </addTable>
+
+  <addColumn name="objid" dataType="Integer" table="mm_var" >
+    <description>Internal record number</description>
+    <clarifyGenericFieldID>3</clarifyGenericFieldID>
+  </addColumn>
+  <addColumn name="dev" dataType="Integer" table="mm_var" >
+    <isNullable>true</isNullable>
+    <description>Row version number for mobile distribution purposes</description>
+    <clarifyGenericFieldID>151</clarifyGenericFieldID>
+  </addColumn>
+  
+  <addColumn name="var_name" dataType="String" table="mm_var" >
+    <length>40</length>
+    <description>Name of the variable</description>
+  </addColumn>
+  <addColumn name="var_path" dataType="String" table="mm_var" >
+    <length>255</length>
+    <description>Path of the variable</description>
+  </addColumn>
+  <addColumn name="rank" dataType="Integer" table="mm_var" >
+    <isNullable>false</isNullable>
+    <description>Ordering for variables</description>
+  </addColumn>
+  
+ 
+    <addRelation name="profile2mm_var" type="OneToMany" table="mm_profile"     inverseRelationName="var2mm_profile"     inverseTable="mm_var" />
+ 
+</schemaScript>
