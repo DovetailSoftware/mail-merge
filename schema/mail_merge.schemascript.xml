@@ -22,7 +22,7 @@
     <length>255</length>
     <description>Name of the profile</description>
   </addColumn>
-  <addColumn name="root_objid" dataType="String" table="mm_profile" >
+  <addColumn name="root_obj" dataType="String" table="mm_profile" >
     <length>64</length>
     <description>Base object of the profile</description>
   </addColumn>
