@@ -222,6 +222,9 @@ Public Sub merge_profile_data()
   Dim new_row        As Object          ' New row that we're adding
   Dim num_rows       As Integer         ' Number of rows to add
 
+  Dim tmp_txt 		 As String
+  Dim txt_len 		 As Integer
+  
   Dim tbl_replace(MAX_TBL_REPLACE) As String   ' Array of data to replace in rows we're adding
 
                    ' Loop through all the tables in the document
@@ -330,17 +333,32 @@ Public Sub merge_profile_data()
   For each obj_range in gmm_word_app.ActiveDocument.StoryRanges
     the_start = obj_range.Start
     the_end = obj_range.End
+
+	
     Do
       obj_range.Find.ClearFormatting
       obj_range.Find.Text = "\{*\}"
       obj_range.Find.Forward = True
       obj_range.Find.MatchWildcards = True
       obj_range.Find.Execute
+     
       If obj_range.Find.Found Then
-        obj_range.Text = replace_string_perhaps(obj_range.Text)
-        obj_range.Start = the_start
-        obj_range.End = the_end
+     
+         	tmp_txt = replace_string_perhaps(obj_range.Text)
+
+		obj_range.Text  = tmp_txt 
+	    	obj_range.Start = the_start
+        
+        	txt_len = Len(obj_range.Text)
+
+        	If Len(tmp_txt) > Len(obj_range.Text) Then 
+        		txt_len = Len(tmp_txt)
+        	End If
+        	
+        	obj_range.End = the_end + txt_len
+
       End If
+
     Loop While obj_range.Find.Found
   Next obj_range
 End Sub
@@ -610,3 +628,4 @@ Public Sub test_mm()
      Debug.Print "Failure. Return code = " & Trim$(Str$(ret_int))
   End If
 End Sub
+ 
