@@ -134,11 +134,9 @@ Public Sub get_var_value(var_path As String, ByVal root_rec As Record, var_name 
   new_list.AppendItem root_rec
   get_var_value1 var_path, new_list, var_name
 
-                   ' If we found the value, put variable and value in their lists
-  If gmm_VarValue <> "" Then
-     gmm_name_list.AppendItem var_name
-     gmm_val_list.AppendItem gmm_VarValue
-  End If
+  gmm_name_list.AppendItem var_name
+  gmm_val_list.AppendItem gmm_VarValue
+ 
 End Sub
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
